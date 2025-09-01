@@ -1,0 +1,65 @@
+# ───────────────
+# Node & Package
+# ───────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ───────────────
+# Build & Output
+# ───────────────
+dist/
+build/
+.cache/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# ───────────────
+# Env Files
+# ───────────────
+.env
+.env.*.local
+.env.test
+.env.dev
+.env.prod
+
+# ───────────────
+# Logs
+# ───────────────
+logs/
+*.log
+*.log.*
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# ───────────────
+# Editor & System
+# ───────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ───────────────
+# Docker
+# ───────────────
+docker-compose.override.yml
+*.pid
+*.seed
+
+# ───────────────
+# Test
+# ───────────────
+/coverage
+/junit.xml
+/test-results/
