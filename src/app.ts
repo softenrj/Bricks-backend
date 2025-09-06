@@ -13,8 +13,11 @@ import { rateLimiter } from "./config/rateLimitConfig.js";
 // 📌 Router & Middleware
 import { router } from "./router.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import mongoServer from "./config/mongoConfig.js";
+import { env } from "./config/env.js";
 
 const app = express();
+env
 
 /* -----------------------------------
    🔧 Middleware Stack
@@ -37,6 +40,9 @@ helmetConfig(app);
 
 // CORS setup
 corsConfig(app);
+
+// MongoDb
+mongoServer();
 
 // Rate limiting (global or per route)
 app.use(rateLimiter);
