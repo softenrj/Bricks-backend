@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 
 export const signIn = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { email, username, firebaseId } = req.body;
+        const { email, username, firebaseId, token, authType } = req.body;
 
         if (!firebaseId) {
             res.status(400).json({ success: false, message: "firebaseId is required", data: {}, });
@@ -12,7 +12,7 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
         let user = await User.findOne({ firebaseId });
 
         if (!user) {
-            user = await User.create({ email, username, firebaseId });
+            user = await User.create({ email, username, firebaseId, token, authType });
         }
 
         res.status(200).json({ success: true, message: "User signed in successfully", data: user });
@@ -24,3 +24,4 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
         });
     }
 };
+
