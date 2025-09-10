@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 declare global {
   namespace Express {
     interface Request {
-      user?: mongoose.Types.ObjectId;
+      userId?: mongoose.Types.ObjectId;
     }
   }
 }
@@ -33,9 +33,10 @@ class AuthMiddleware {
       return res.status(401).json({ message: "Unauthorized: User not found" });
     }
 
-    req.user = user._id;
+    req.userId = user._id;
     next();
   });
 }
 
 export default AuthMiddleware;
+export const isAuth = AuthMiddleware.isAuthenticated;
