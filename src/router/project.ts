@@ -8,4 +8,5 @@ router.post('/bricks-new-project', isAuth, projectController.createNewProject)
 router.get('/projects', isAuth, projectController.getProjects)
 router.get('/project/:projectId', isAuth, projectController.getProject)
 
+
 export const projectRouter = router;
