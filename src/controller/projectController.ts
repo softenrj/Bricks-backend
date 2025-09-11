@@ -96,3 +96,28 @@ export const getProject = async (req: Request, res: Response): Promise<void> => 
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
     }
 };
+
+export const getRecentProjects = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.userId;
+
+        if (!userId) {
+            sendResponse(res, 401, { success: false, message: "Unauthorized" });
+            return;
+        }
+
+        const projects = await Project.find({ userId })
+            .sort({ createdAt: -1 })
+            .limit(4);
+
+
+        sendResponse(res, 200, {
+            success: true,
+            message: "Recent Projects fetched successfully",
+            data: projects
+        });
+    } catch (error) {
+        console.error("Error getting Recent projects:", error);
+        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    }
+};
