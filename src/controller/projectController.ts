@@ -121,3 +121,4 @@ export const getRecentProjects = async (req: Request, res: Response): Promise<vo
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
     }
 };
+

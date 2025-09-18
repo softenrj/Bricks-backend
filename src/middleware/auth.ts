@@ -23,14 +23,14 @@ class AuthMiddleware {
   public static isAuthenticated = catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
     const token = this.extractToken(req);
     if (!token) {
-      return res.status(401).json({ message: "Unauthorized: No token provided" });
+      return res.status(401).json({ message: "Unauthorized: No token provided", unauthorized: true });
     }
 
     const decodedToken = await admin.auth().verifyIdToken(token);
     const user = await User.findOne({ firebaseId: decodedToken.uid }, { _id: 1 });
 
     if (!user) {
-      return res.status(401).json({ message: "Unauthorized: User not found" });
+      return res.status(401).json({ message: "Unauthorized: User not found", unauthorized: true });
     }
 
     req.userId = user._id;

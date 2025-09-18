@@ -42,6 +42,7 @@
     "primelogger": "^1.0.1",
     "rimraf": "^6.0.1",
     "swagger-ui-express": "^5.0.1",
+    "uid": "^2.0.2",
     "winston": "^3.17.0",
     "yamljs": "^0.3.0"
   },
