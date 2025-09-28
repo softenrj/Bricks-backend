@@ -15,7 +15,10 @@ router.post('/bricks-star/:projectId', isAuth, ProjectStarHandler.markStar)
 router.delete('/bricks-unstar/:projectId', isAuth, ProjectStarHandler.unStar)
 
 router.post('/bricks-archieve/:projectId', isAuth, ProjectArchieveHandler.markArchieve)
-router.post('/bricks-unarchieve/:projectId', isAuth, ProjectArchieveHandler.unArchieve)
+router.delete('/bricks-unarchieve/:projectId', isAuth, ProjectArchieveHandler.unArchieve)
+
+router.get('/bricks-all-projects-list-export', isAuth, projectController.exportAllProject)
+router.get('/bricks-arch-projects-list-export', isAuth, projectController.exportArchProject)
 
 
 export const projectRouter = router;

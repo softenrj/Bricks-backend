@@ -35,28 +35,50 @@ export const createNewProject = async (req: Request, res: Response): Promise<voi
 export const getProjects = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
-        const { limit = 12, lastCreatedAt, filter } = req.query;
+        const { limit = 12, lastCreatedAt, sort, q, att, created_after, created_before, ach } = req.query;
 
         if (!userId) {
             sendResponse(res, 401, { success: false, message: "Unauthorized" });
             return;
         }
 
-        let query: Record<string, any> = { userId };
+        let query: Record<string, any> = { userId, archived: false };
 
         if (lastCreatedAt) {
             const date = new Date(lastCreatedAt as string);
             if (!isNaN(date.getTime())) {
-                query.createdAt = { $lt: date }; // ✅ use date instead of string
+                query.createdAt = { $lt: date };
             }
         }
 
-        if (filter) {
-            // TODO: add filter conditions (e.g. by technology, language, etc.)
+        if (created_after || created_before) {
+            query.createdAt = {};
+            if (created_after) query.createdAt.$gte = new Date(created_after as string);
+            if (created_before) query.createdAt.$lte = new Date(created_before as string);
+        }
+
+        if (q) {
+            query.$or = [
+                { name: { $regex: q as string, $options: "i" } },
+                { description: { $regex: q as string, $options: "i" } },
+            ];
+        }
+
+        if (att) {
+            query.starred = true;
+        }
+
+        if (ach) {
+            query.archived = true;
+        }
+
+        let sort_filter: 1 | -1 = -1;
+        if (sort) {
+            sort_filter = sort === "asc" ? 1 : -1;
         }
 
         const projects = await Project.find(query)
-            .sort({ createdAt: -1 })
+            .sort({ createdAt: sort_filter })
             .limit(Number(limit) + 1);
 
         const hasNextPage = projects.length > Number(limit);
@@ -122,3 +144,48 @@ export const getRecentProjects = async (req: Request, res: Response): Promise<vo
     }
 };
 
+export const exportAllProject = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            sendResponse(res, 401, { success: false, message: "Unauthorized" });
+            return;
+        }
+
+        const projects = await Project.find({});
+        if (!projects) {
+            sendResponse(res, 400, { success: false, message: "No Projects Found" });
+            return;
+        }
+
+        sendResponse(res, 200, { success: true,data: projects, message: "Projects fetched successfully" });
+        return;
+
+    } catch (error) {
+        console.error("Error getting ALL projects Export:", error);
+        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    }
+}
+
+export const exportArchProject = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            sendResponse(res, 401, { success: false, message: "Unauthorized" });
+            return;
+        }
+
+        const projects = await Project.find({ archived: true });
+        if (!projects) {
+            sendResponse(res, 400, { success: false, message: "No Archieve Projects Found" });
+            return;
+        }
+
+        sendResponse(res, 200, { success: true,data: projects, message: "Projects fetched successfully" });
+        return;
+
+    } catch (error) {
+        console.error("Error getting ALL projects Export:", error);
+        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    }
+}
