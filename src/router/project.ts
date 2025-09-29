@@ -10,6 +10,7 @@ router.post('/bricks-new-project', isAuth, projectController.createNewProject)
 router.get('/projects', isAuth, projectController.getProjects)
 router.get('/project/:projectId', isAuth, projectController.getProject)
 router.get('/bricks-recent', isAuth, projectController.getRecentProjects)
+router.delete('/bricks-remove-project/:projectId',isAuth, projectController.markProjectDetete)
 
 router.post('/bricks-star/:projectId', isAuth, ProjectStarHandler.markStar)
 router.delete('/bricks-unstar/:projectId', isAuth, ProjectStarHandler.unStar)

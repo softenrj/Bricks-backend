@@ -20,6 +20,7 @@ export interface IProject extends Document {
   starred: boolean;
   createdAt: Date;
   updatedAt: Date;
+  markDelete: boolean;
 }
 
 const ProjectSchema = new Schema<IProject>(
@@ -30,7 +31,8 @@ const ProjectSchema = new Schema<IProject>(
     web_technology: { type: String, enum: Object.values(WebTech), required: true },
     tech_language: { type: String, enum: Object.values(TechLanguage), required: true },
     archived: { type: Boolean, default: false },
-    starred: { type: Boolean, default: false }
+    starred: { type: Boolean, default: false },
+    markDelete: { type: Boolean, default: false }
   },
   { timestamps: true } 
 );

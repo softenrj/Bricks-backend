@@ -42,7 +42,7 @@ export const getProjects = async (req: Request, res: Response): Promise<void> =>
             return;
         }
 
-        let query: Record<string, any> = { userId, archived: false };
+        let query: Record<string, any> = { userId, archived: false, markDelete: false };
 
         if (lastCreatedAt) {
             const date = new Date(lastCreatedAt as string);
@@ -186,6 +186,33 @@ export const exportArchProject = async (req: Request, res: Response): Promise<vo
 
     } catch (error) {
         console.error("Error getting ALL projects Export:", error);
+        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    }
+}
+
+export const markProjectDetete = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            sendResponse(res, 401, { success: false, message: "Unauthorized" });
+            return;
+        }
+
+        const projectId = req.params.projectId;
+
+        if (!projectId) {
+            sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
+            return;
+        }
+
+        // :: scheduler will remove the project after 10 days giving a chance to recover ::
+        const project = await Project.findOneAndUpdate({
+            userId, _id: projectId
+        }, { markDelete: true }, { $upsert: true} );
+
+        sendResponse(res, 201, { success: true, message: "Project is Successfully Removed" });
+    } catch (error: any) {
+        console.error("Error un node Project:", error);
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
     }
 }
