@@ -1,4 +1,7 @@
 import { Project } from "@/model/project.js";
+import { ProjectFile } from "@/model/project_files.js";
+import { ProjectInitializer } from "@/service/projectInitializer.js";
+import { buildTree, TreeNode } from "@/service/treeNodeBuilder.js";
 import { sendResponse } from "@/types/apiResponse.js";
 import express, { Request, Response } from "express"
 
@@ -24,6 +27,9 @@ export const createNewProject = async (req: Request, res: Response): Promise<voi
             web_technology: web_tech,
             tech_language: tech_lan
         })
+
+        // initialize the projects
+        if (project.id) await ProjectInitializer(project.id, userId, tech_lan);
 
         sendResponse(res, 201, { success: true, message: " Project is successfully Created ", data: project })
     } catch (error) {
@@ -158,7 +164,7 @@ export const exportAllProject = async (req: Request, res: Response): Promise<voi
             return;
         }
 
-        sendResponse(res, 200, { success: true,data: projects, message: "Projects fetched successfully" });
+        sendResponse(res, 200, { success: true, data: projects, message: "Projects fetched successfully" });
         return;
 
     } catch (error) {
@@ -181,7 +187,7 @@ export const exportArchProject = async (req: Request, res: Response): Promise<vo
             return;
         }
 
-        sendResponse(res, 200, { success: true,data: projects, message: "Projects fetched successfully" });
+        sendResponse(res, 200, { success: true, data: projects, message: "Projects fetched successfully" });
         return;
 
     } catch (error) {
@@ -208,11 +214,37 @@ export const markProjectDetete = async (req: Request, res: Response): Promise<vo
         // :: scheduler will remove the project after 10 days giving a chance to recover ::
         const project = await Project.findOneAndUpdate({
             userId, _id: projectId
-        }, { markDelete: true }, { $upsert: true} );
+        }, { markDelete: true }, { $upsert: true });
 
         sendResponse(res, 201, { success: true, message: "Project is Successfully Removed" });
-    } catch (error: any) {
+    } catch (error) {
         console.error("Error un node Project:", error);
+        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    }
+}
+
+export const projectFileTree = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            sendResponse(res, 401, { success: false, message: "Unauthorized" });
+            return;
+        }
+
+        const projectId = req.params.projectId;
+
+        if (!projectId) {
+            sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
+            return;
+        }
+
+        const projectFile = await ProjectFile.find({ projectId, userId });
+
+        const treeNode: TreeNode = buildTree(projectFile);
+
+        sendResponse(res, 201, { success: true, message: "Project FS is Successfully fetched", data: treeNode });
+    } catch (error) {
+        console.error("Error Getting FS: Project:", error);
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
     }
 }

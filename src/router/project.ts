@@ -21,5 +21,7 @@ router.delete('/bricks-unarchieve/:projectId', isAuth, ProjectArchieveHandler.un
 router.get('/bricks-all-projects-list-export', isAuth, projectController.exportAllProject)
 router.get('/bricks-arch-projects-list-export', isAuth, projectController.exportArchProject)
 
+router.get('/bricks-project-files/:projectId', isAuth, projectController.projectFileTree)
+
 
 export const projectRouter = router;
