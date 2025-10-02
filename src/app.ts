@@ -4,13 +4,11 @@ import compression from "compression";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
 const swaggerDocument = YAML.load("./src/docs/swagger.yaml");
-
-// 🛡️ Configs
+// Configs
 import { helmetConfig } from "./config/halmetConfig.js";
 import { corsConfig } from "./config/corsConfig.js";
 import { rateLimiter } from "./config/rateLimitConfig.js";
-
-// 📌 Router & Middleware
+// Router & Middleware
 import { router } from "./router.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import mongoServer from "./config/mongoConfig.js";
@@ -19,46 +17,30 @@ import { env } from "./config/env.js";
 const app = express();
 env
 
-/* -----------------------------------
-   🔧 Middleware Stack
------------------------------------ */
-
-// Serve Swagger UI at /docs
-/**
- * hit that route on browser
- */
+// :::: Middleware Stack ::::
+// Doc
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Logger (development-friendly)
+// Logger
 app.use(morgan("dev"));
-
-// Response compression
 app.use(compression());
-
-// Security headers (Helmet)
 helmetConfig(app);
-
-// CORS setup
 corsConfig(app);
 
 // MongoDb
 mongoServer();
 
-// Rate limiting (global or per route)
+// Rate limiting
 app.use(rateLimiter);
 
 // Parse incoming requests
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-/* -----------------------------------
-   🚏 Routes
------------------------------------ */
+// :::: ROUTER ::::
 router(app);
 
-/* -----------------------------------
-   ❌ Error Handling (last middleware)
------------------------------------ */
+// :::: ERROR HANDLER ::::
 app.use(errorHandler);
 
 export default app as Application;
