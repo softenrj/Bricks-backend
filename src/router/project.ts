@@ -1,8 +1,8 @@
-import { isAuth } from "@/middleware/auth.js";
+import { isAuth } from "../middleware/auth.js";
 import { Router } from "express";
-import * as projectController from "@/controller/projectController.js"
-import ProjectStarHandler from "@/controller/project.starController.js";
-import ProjectArchieveHandler from "@/controller/project.archieveController.js";
+import * as projectController from "../controller/projectController.js"
+import ProjectStarHandler from "../controller/project.starController.js";
+import ProjectArchieveHandler from "../controller/project.archieveController.js";
 
 const router = Router();
 

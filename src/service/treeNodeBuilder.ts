@@ -1,4 +1,4 @@
-import { IProjectFile } from "@/model/project_files.js";
+import { IProjectFile } from "../model/project_files.js";
 
 export type TreeNode = { [key: string]: string | TreeNode }
 

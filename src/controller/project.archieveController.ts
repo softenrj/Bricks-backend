@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { Project } from "@/model/project.js";
-import { sendResponse } from "@/types/apiResponse.js";
+import { Project } from "../model/project.js";
+import { sendResponse } from "../types/apiResponse.js";
 
 
 // Class Responsible for Project Archieve or UnArchieve //

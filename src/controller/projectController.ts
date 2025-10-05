@@ -1,9 +1,10 @@
-import { Project } from "@/model/project.js";
-import { ProjectFile } from "@/model/project_files.js";
-import { ProjectInitializer } from "@/service/projectInitializer.js";
-import { buildTree, TreeNode } from "@/service/treeNodeBuilder.js";
-import { sendResponse } from "@/types/apiResponse.js";
+
 import express, { Request, Response } from "express"
+import { Project } from "../model/project.js";
+import { ProjectFile } from "../model/project_files.js";
+import { ProjectInitializer } from "../service/projectInitializer.js";
+import { buildTree, TreeNode } from "../service/treeNodeBuilder.js";
+import { sendResponse } from "../types/apiResponse.js";
 
 export const createNewProject = async (req: Request, res: Response): Promise<void> => {
     try {

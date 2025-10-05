@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import catchAsyncErrors from "./catchAsyncErrors.js";
-import admin from "@/config/firebaseAdmin.js";
-import User from "@/model/user.js";
 import mongoose from "mongoose";
+import User from "../model/user.js";
+import admin from "../config/firebaseAdmin.js";
 
 declare global {
   namespace Express {

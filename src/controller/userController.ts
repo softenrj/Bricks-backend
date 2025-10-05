@@ -1,7 +1,8 @@
-import User from "@/model/user.js";
-import { userIdProvider } from "@/service/user.uidProvider.js";
-import { sendResponse } from "@/types/apiResponse.js";
+
 import { Request, Response } from "express";
+import User from "../model/user.js";
+import { userIdProvider } from "../service/user.uidProvider.js";
+import { sendResponse } from "../types/apiResponse.js";
 
 export const signIn = async (req: Request, res: Response): Promise<void> => {
     try {

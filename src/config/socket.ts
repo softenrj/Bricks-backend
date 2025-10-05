@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
 import { logger } from "./loggerConfig.js";
-import { broadCast, SocketModule } from "@/socket.js";
+import { broadCast, SocketModule } from "../socket.js";
 
 export const socketInitializer = (httpServer: any) => {
     const io = new Server(httpServer, {

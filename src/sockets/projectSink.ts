@@ -1,4 +1,4 @@
-import { ProjectFile } from "@/model/project_files.js";
+import { ProjectFile } from "../model/project_files.js";
 import { Socket } from "socket.io";
 
 const projectUpdate = async (path: string, fsContent: string, name: string): Promise<boolean> => {

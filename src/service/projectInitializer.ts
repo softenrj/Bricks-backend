@@ -1,5 +1,5 @@
-import { TechLanguage } from "@/model/project.js";
-import { ProjectFile } from "@/model/project_files.js";
+import { TechLanguage } from "../model/project.js";
+import { ProjectFile } from "../model/project_files.js";
 import mongoose from "mongoose";
 import logger from "primelogger";
 
