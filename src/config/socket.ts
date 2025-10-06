@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import { logger } from "./loggerConfig.js";
 import { broadCast, SocketModule } from "../socket.js";
 import admin from "./firebaseAdmin.js";
-import User from "model/user.js";
+import User from "../model/user.js";
 
 export const socketInitializer = (httpServer: any) => {
     const io = new Server(httpServer, {
