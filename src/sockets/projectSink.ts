@@ -27,9 +27,23 @@ export const projectSocket = (socket: Socket) => {
 
   // Add new file
   socket.on("file:add", async (req) => {
-    const { path, name } = req;
+    const { path, name, projectId } = req;
+    const userId = socket.data.userId;
     try {
-      const newFile = await ProjectFile.create({ path, name, content: "" });
+      const newFile = await ProjectFile.create({ path, name, content: "", type: 'file', userId, projectId });
+      socket.emit("file:add:ack", { path, name, success: !!newFile });
+    } catch (err) {
+      console.error(err);
+      socket.emit("file:add:ack", { path, name, success: false });
+    }
+  });
+
+  // New Folder
+  socket.on("folder:add", async (req) => {
+    const { path, name, projectId } = req;
+    const userId = socket.data.userId;
+    try {
+      const newFile = await ProjectFile.create({ path, name, type: "folder", projectId, userId });
       socket.emit("file:add:ack", { path, name, success: !!newFile });
     } catch (err) {
       console.error(err);
