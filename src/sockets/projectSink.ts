@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { ProjectFile } from "../model/project_files.js";
 import { Socket } from "socket.io";
+import { CortexPipeline } from "pipelines/CortexPipeline.js";
 
 const projectUpdate = async (path: string, fsContent: string, name: string, userId: mongoose.Types.ObjectId): Promise<boolean> => {
   try {
@@ -8,6 +9,11 @@ const projectUpdate = async (path: string, fsContent: string, name: string, user
       { path, name, userId },
       { content: fsContent },
     );
+
+    // background Cortext PipeLine
+    if (projectFile) {
+      CortexPipeline(projectFile)
+    }
 
     return !!projectFile;
   } catch (error) {
@@ -21,7 +27,7 @@ export const projectSocket = (socket: Socket) => {
   socket.on("file:update", async (req) => {
     const { path, fsContent, name } = req;
     const userId = socket.data.userId;
-    const success = await projectUpdate(path.trim(), fsContent, name.trim(), userId);
+    const success = await projectUpdate(path.trim(), fsContent, name.trim(), userId);    
     socket.emit("file:update:ack", { path, name, success });
   });
 
