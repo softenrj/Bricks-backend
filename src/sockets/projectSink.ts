@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { ProjectFile } from "../model/project_files.js";
 import { Socket } from "socket.io";
-import { CortexPipeline } from "pipelines/CortexPipeline.js";
+import { CortexPipeline } from "../pipelines/CortexPipeline.js";
 
 const projectUpdate = async (path: string, fsContent: string, name: string, userId: mongoose.Types.ObjectId): Promise<boolean> => {
   try {

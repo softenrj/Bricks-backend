@@ -1,9 +1,9 @@
-import { IProjectFile } from "model/project_files.js";
+import { IProjectFile } from "../model/project_files.js";
 import { decodeBase64Encoding } from "./utils.js";
-import { extractFileContextAST, FileContextResult } from "service/adstractSyntexTree.js";
-import FileContext from "model/files_contexts.js";
-import getVectorEmbedding from "service/vectorTransformer.js";
-import { FileVector } from "model/file_vectors.js";
+import { extractFileContextAST, FileContextResult } from "../service/adstractSyntexTree.js";
+import FileContext from "../model/files_contexts.js";
+import getVectorEmbedding from "../service/vectorTransformer.js";
+import { FileVector } from "../model/file_vectors.js";
 
 /**
  * @name CortexPipeline
