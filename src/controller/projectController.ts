@@ -1,7 +1,7 @@
 
 import express, { Request, Response } from "express"
 import { Project } from "../model/project.js";
-import { ProjectFile } from "../model/project_files.js";
+import { IProjectFile, ProjectFile } from "../model/project_files.js";
 import { ProjectInitializer } from "../service/projectInitializer.js";
 import { buildTree, TreeNode } from "../service/treeNodeBuilder.js";
 import { sendResponse } from "../types/apiResponse.js";
@@ -239,7 +239,7 @@ export const projectFileTree = async (req: Request, res: Response) => {
             return;
         }
 
-        const projectFile = await ProjectFile.find({ projectId, userId }).lean();
+        const projectFile: IProjectFile[] = await ProjectFile.find({ projectId, userId }).lean();
 
         const treeNode: TreeNode = buildTree(projectFile);
 

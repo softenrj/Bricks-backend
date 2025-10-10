@@ -33,7 +33,7 @@ export class ProjectContextController {
                 return;
             }
 
-            const childFiles = await ProjectFile.find({ projectId, userId }).lean();
+            const childFiles: IProjectFile[] = await ProjectFile.find({ projectId, userId }).lean();
 
             const treeNode = buildContextTree(childFiles);
 
