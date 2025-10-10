@@ -239,7 +239,7 @@ export const projectFileTree = async (req: Request, res: Response) => {
             return;
         }
 
-        const projectFile = await ProjectFile.find({ projectId, userId });
+        const projectFile = await ProjectFile.find({ projectId, userId }).lean();
 
         const treeNode: TreeNode = buildTree(projectFile);
 
