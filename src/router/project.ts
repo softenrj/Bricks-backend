@@ -25,5 +25,7 @@ router.get('/bricks-project-files/:projectId', isAuth, projectController.project
 
 router.get('/bricks-chat-tabs', isAuth, projectController.projectBricksChatTabs)
 
+router.post('/bricks-code-sugg', isAuth, projectController.bricksCodeCompletion)
+
 
 export const projectRouter = router;

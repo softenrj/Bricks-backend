@@ -6,7 +6,14 @@ import { ProjectInitializer } from "../service/projectInitializer.js";
 import { buildTree, TreeNode } from "../service/treeNodeBuilder.js";
 import { sendResponse } from "../types/apiResponse.js";
 import bricks_chats from "../model/bricks_chats.js";
+import { CodeCompletion } from "../service/bricksCodeCompletion.js";
 
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const createNewProject = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -40,6 +47,12 @@ export const createNewProject = async (req: Request, res: Response): Promise<voi
     }
 }
 
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const getProjects = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -104,6 +117,12 @@ export const getProjects = async (req: Request, res: Response): Promise<void> =>
     }
 };
 
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const getProject = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -127,6 +146,12 @@ export const getProject = async (req: Request, res: Response): Promise<void> => 
     }
 };
 
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const getRecentProjects = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -152,6 +177,12 @@ export const getRecentProjects = async (req: Request, res: Response): Promise<vo
     }
 };
 
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const exportAllProject = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -175,6 +206,12 @@ export const exportAllProject = async (req: Request, res: Response): Promise<voi
     }
 }
 
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const exportArchProject = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -198,6 +235,12 @@ export const exportArchProject = async (req: Request, res: Response): Promise<vo
     }
 }
 
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const markProjectDetete = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -225,6 +268,12 @@ export const markProjectDetete = async (req: Request, res: Response): Promise<vo
     }
 }
 
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const projectFileTree = async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
@@ -244,13 +293,19 @@ export const projectFileTree = async (req: Request, res: Response) => {
 
         const treeNode: TreeNode = buildTree(projectFile);
 
-        sendResponse(res, 201, { success: true, message: "Project FS is Successfully fetched", data: treeNode });
+        sendResponse(res, 200, { success: true, message: "Project FS is Successfully fetched", data: treeNode });
     } catch (error) {
         console.error("Error Getting FS: Project:", error);
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
     }
 }
 
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const projectBricksChatTabs = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -262,9 +317,34 @@ export const projectBricksChatTabs = async (req: Request, res: Response): Promis
         }
 
         const tabs = await bricks_chats.find({ userId, projectId })
-        
+        sendResponse(res, 200, { success: true, message: "Bricks chat is Successfully fetched", data: tabs });
     } catch (error) {
         console.error("Error Getting FS: Project:", error);
+        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    }
+}
+
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
+export const bricksCodeCompletion = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            sendResponse(res, 401, { success: false, message: "Unauthorized" });
+            return;
+        }
+
+        const { context } = req.body;
+        const decodedContent = atob(context);
+        const __sugges = await CodeCompletion.getCodeCompletion(decodedContent);
+        const encode = Buffer.from(__sugges, 'utf-8').toString('base64');
+        sendResponse(res, 200, { success: true, message: "Bricks:code__sugg__", data: encode });
+    } catch (error) {
+        console.error("Error Code sugg: Project:", error);
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
     }
 }
