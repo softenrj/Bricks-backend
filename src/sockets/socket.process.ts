@@ -1,5 +1,5 @@
 import mongoose from "mongoose"
-import { io } from "server.js"
+import { io } from "../server.js"
 
 export interface ProcessSocketType {
     status: boolean,
