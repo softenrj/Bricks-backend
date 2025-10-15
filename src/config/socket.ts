@@ -28,6 +28,8 @@ export const socketInitializer = (httpServer: any) => {
 
     io.on("connection", (socket) => {
         logger.color("greenBright").bold(`A user with socket Id: ${socket.id} connected`);
+        socket.join(socket.data.userId.toString());
+
         socket.on("disconnect", (reason) => {
             logger.color("yellowBright").bold(`User disconnected: ${socket.id}, reason: ${reason}`);
         });

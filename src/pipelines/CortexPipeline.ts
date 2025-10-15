@@ -4,6 +4,9 @@ import { extractFileContextAST, FileContextResult } from "../service/adstractSyn
 import FileContext from "../model/files_contexts.js";
 import getVectorEmbedding from "../service/vectorTransformer.js";
 import { FileVector } from "../model/file_vectors.js";
+import { RealtimeStatusSocket } from "../sockets/socket.RealTime.js";
+import mongoose from "mongoose";
+import { uIdProvider } from "../service/user.uidProvider.js";
 
 /**
  * @name CortexPipeline
@@ -11,7 +14,7 @@ import { FileVector } from "../model/file_vectors.js";
  * @param {IProjectFile} projectFile - The file object containing content and metadata
  * @returns {Promise<void>}
  */
-export async function CortexPipeline(projectFile: IProjectFile) {
+export async function CortexPipeline(projectFile: IProjectFile, userId: mongoose.Types.ObjectId) {
   try {
 
     // #region ------------------------- SETUP -------------------------
@@ -41,6 +44,13 @@ export async function CortexPipeline(projectFile: IProjectFile) {
     }
 
     const contentCollection = await upsertContext();
+    if (contentCollection) {
+      RealtimeStatusSocket.__push({
+        id: uIdProvider(),
+        type: 'fun',
+        message: "[Info] Context is Updated for this File"
+      }, userId)
+    }
     //! Context saved
     // #endregion
 
@@ -63,6 +73,14 @@ export async function CortexPipeline(projectFile: IProjectFile) {
     }
 
     const vectorCollection = await upsertVector();
+
+    if (vectorCollection) {
+      RealtimeStatusSocket.__push({
+        id: uIdProvider(),
+        type: 'fun',
+        message: "[Info] Vector is Updated for that File.."
+      }, userId)
+    }
     //! Vector saved
     // #endregion
 

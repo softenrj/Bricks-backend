@@ -7,6 +7,7 @@ import { buildTree, TreeNode } from "../service/treeNodeBuilder.js";
 import { sendResponse } from "../types/apiResponse.js";
 import bricks_chats from "../model/bricks_chats.js";
 import { CodeCompletion } from "../service/bricksCodeCompletion.js";
+import { ProcessSocket } from "sockets/socket.process.js";
 
 /**
  * 
@@ -340,8 +341,16 @@ export const bricksCodeCompletion = async (req: Request, res: Response): Promise
 
         const { context } = req.body;
         const decodedContent = atob(context);
+        ProcessSocket.pushStatus({
+            status: true,
+            message: "Generating suggestions… hang tight!"
+        },userId)
         const __sugges = await CodeCompletion.getCodeCompletion(decodedContent);
         const encode = Buffer.from(__sugges, 'utf-8').toString('base64');
+        ProcessSocket.pushStatus({
+            status: false,
+            message: "Code suggestions ready!"
+        },userId)
         sendResponse(res, 200, { success: true, message: "Bricks:code__sugg__", data: encode });
     } catch (error) {
         console.error("Error Code sugg: Project:", error);

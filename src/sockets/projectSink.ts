@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import { ProjectFile } from "../model/project_files.js";
 import { Socket } from "socket.io";
 import { CortexPipeline } from "../pipelines/CortexPipeline.js";
+import { RealtimeStatusSocket } from "./socket.RealTime.js";
+import { uIdProvider } from "../service/user.uidProvider.js";
 
 const projectUpdate = async (path: string, fsContent: string, name: string, userId: mongoose.Types.ObjectId): Promise<boolean> => {
   try {
@@ -10,9 +12,15 @@ const projectUpdate = async (path: string, fsContent: string, name: string, user
       { content: fsContent },
     );
 
+    RealtimeStatusSocket.__push({
+      id: uIdProvider(),
+      type: 'info',
+      message: "[Info] Project File is Updated"
+    }, userId)
+
     // background Cortext PipeLine
     if (projectFile) {
-      CortexPipeline(projectFile)
+      CortexPipeline(projectFile,userId)
     }
 
     return !!projectFile;
