@@ -7,7 +7,7 @@ import { buildTree, TreeNode } from "../service/treeNodeBuilder.js";
 import { sendResponse } from "../types/apiResponse.js";
 import bricks_chats from "../model/bricks_chats.js";
 import { CodeCompletion } from "../service/bricksCodeCompletion.js";
-import { ProcessSocket } from "sockets/socket.process.js";
+import { ProcessSocket } from "../sockets/socket.process.js";
 
 /**
  * 
