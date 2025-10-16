@@ -2,6 +2,7 @@ import { Application, Request, Response } from "express";
 import { userRouter } from "./router/user.js";
 import { projectRouter } from "./router/project.js";
 import { Context } from "./router/context.js";
+import { bricksChatRouter } from "./router/bricksChat.js";
 
 export const router = (app: Application) => {
     app.get('/health', (req, res) => {
@@ -14,9 +15,10 @@ export const router = (app: Application) => {
     
     app.use('/api/user',userRouter),
     app.use('/api/project', projectRouter),
-    app.use('/api/context', Context)
+    app.use('/api/context', Context),
+    app.use('/api/chat', bricksChatRouter),
 
     app.use('/', (req: Request, res: Response): void => {
-        res.status(200).json("Welcome to the API")
+        res.status(200).json("Welcome to the Bricks API")
     })
 }

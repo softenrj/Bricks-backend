@@ -23,8 +23,6 @@ router.get('/bricks-arch-projects-list-export', isAuth, projectController.export
 
 router.get('/bricks-project-files/:projectId', isAuth, projectController.projectFileTree)
 
-router.get('/bricks-chat-tabs', isAuth, projectController.projectBricksChatTabs)
-
 router.post('/bricks-code-sugg', isAuth, projectController.bricksCodeCompletion)
 
 

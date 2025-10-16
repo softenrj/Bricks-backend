@@ -5,6 +5,7 @@ import { ChatCompletionMessageParam } from "groq-sdk/resources/chat.mjs";
 import { AI_MODULE } from "../config/groqSdkConfig.js";
 import { FileVector } from "../model/file_vectors.js";
 import getVectorEmbedding from "./vectorTransformer.js";
+import mongoose from "mongoose";
 
 const MAX_MESSAGE_LENGTH = 2000;
 const HISTORY_LIMIT = 3; 
@@ -51,7 +52,7 @@ export class BRICKS_AI_ENGINE {
      * @returns 
      */
     private static async _initialize_bricks_chat_(
-        userId: string,
+        userId: mongoose.Types.ObjectId,
         projectId: string,
         prompt: string
     ): Promise<IBricksChat | null> {
@@ -76,7 +77,7 @@ export class BRICKS_AI_ENGINE {
      */
     public static async projectChatSupport(
         chatId: string | undefined,
-        userId: string,
+        userId: mongoose.Types.ObjectId,
         projectId: string,
         prompt: string
     ): Promise<string> {

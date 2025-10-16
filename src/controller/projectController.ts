@@ -5,7 +5,6 @@ import { IProjectFile, ProjectFile } from "../model/project_files.js";
 import { ProjectInitializer } from "../service/projectInitializer.js";
 import { buildTree, TreeNode } from "../service/treeNodeBuilder.js";
 import { sendResponse } from "../types/apiResponse.js";
-import bricks_chats from "../model/bricks_chats.js";
 import { CodeCompletion } from "../service/bricksCodeCompletion.js";
 import { ProcessSocket } from "../sockets/socket.process.js";
 
@@ -295,30 +294,6 @@ export const projectFileTree = async (req: Request, res: Response) => {
         const treeNode: TreeNode = buildTree(projectFile);
 
         sendResponse(res, 200, { success: true, message: "Project FS is Successfully fetched", data: treeNode });
-    } catch (error) {
-        console.error("Error Getting FS: Project:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
-    }
-}
-
-/**
- * 
- * @param req 
- * @param res 
- * @returns 
- */
-export const projectBricksChatTabs = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
-        const projectId = req.params.projectId;
-
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        const tabs = await bricks_chats.find({ userId, projectId })
-        sendResponse(res, 200, { success: true, message: "Bricks chat is Successfully fetched", data: tabs });
     } catch (error) {
         console.error("Error Getting FS: Project:", error);
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
