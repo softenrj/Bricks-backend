@@ -142,7 +142,7 @@ export class BRICKS_AI_ENGINE {
 
             //? Get AI response
             const response = await AI_MODULE.chat.completions.create({
-                model: "mixtral-8x7b-32768",
+                model: "llama-3.1-8b-instant",
                 messages,
                 temperature: 0.7,
             });

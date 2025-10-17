@@ -4,7 +4,7 @@ import * as bricksChatController from "../controller/project.chat.js"
 
 const router = Router();
 
-router.get('/tabs', isAuth, bricksChatController.projectBricksChatTabs)
-router.get('/brick-ai-response/:projectId', isAuth, bricksChatController.projectBricksChat)
+router.post('/tabs/:projectId', isAuth, bricksChatController.projectBricksChatTabs)
+router.post('/brick-ai-response/:projectId', isAuth, bricksChatController.projectBricksChat)
 
 export const bricksChatRouter = router;
