@@ -22,12 +22,12 @@ export class BRICKS_AI_ENGINE {
 
         try {
             const response = await AI_MODULE.chat.completions.create({
-                model: "mixtral-8x7b-32768",
+                model: "llama-3.1-8b-instant",
                 messages: [
                     {
                         role: "system",
                         content:
-                            "You are an AI assistant. Generate a short, 3–6 word title for a chat based on the user input. Make it readable and descriptive.",
+                            "You are an AI assistant. Generate a short, 3–6 word title for a chat based on the user input. Make it readable and descriptive and insure not add any brackets just give me text no brackets needed",
                     },
                     { role: "user", content: prompt },
                 ],
@@ -80,7 +80,7 @@ export class BRICKS_AI_ENGINE {
         userId: mongoose.Types.ObjectId,
         projectId: string,
         prompt: string
-    ): Promise<string> {
+    ): Promise<{ chat: IBricksChat | null, result: string}> {
         try {
             //? Ensure chat exists
             let chat = chatId
@@ -155,10 +155,10 @@ export class BRICKS_AI_ENGINE {
                 { chatId: chat._id, userId, projectId, role: "assistant", content: aiMessage },
             ]);
 
-            return aiMessage;
+            return { chat: chat, result: aiMessage };
         } catch (error) {
             console.error("Error in projectChatSupport:", error);
-            return "An error occurred while processing your request.";
+            return { chat: null, result: "An error occurred while processing your request."};
         }
     }
 }
