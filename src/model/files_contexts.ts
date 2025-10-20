@@ -9,6 +9,7 @@ export interface IFILECONTEXT extends Document {
     dependencies?: string[];
     lines?: number;
     fileType?: string;
+    isDefault: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -20,6 +21,7 @@ const FILECONTEXT_SCHEMA = new mongoose.Schema<IFILECONTEXT>({
     imports: { type: [String], default: [] },
     exports: { type: [String], default: [] },
     dependencies: { type: [String], default: [] },
+    isDefault: { type: Boolean, default: false },
     lines: { type: Number },
     fileType: { type: String },
 }, { timestamps: true })

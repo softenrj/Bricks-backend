@@ -1,8 +1,8 @@
 import { AI_MODULE } from "../config/groqSdkConfig.js";
 import { ChatCompletionMessageParam } from "groq-sdk/resources/chat.mjs";
 
-const MAX_TOKENS = 40; // small for inline completion
-const TEMPERATURE = 0.2; // deterministic
+const MAX_TOKENS = 120;
+const TEMPERATURE = 0.4;
 
 export class CodeCompletion {
   public static async getCodeCompletion(codeBeforeCursor: string): Promise<string> {
@@ -13,23 +13,21 @@ export class CodeCompletion {
         {
           role: "system",
           content: `
-You are an expert AI coding assistant for inline completions.
-Rules:
-1. Only continue from the cursor position; do not modify preceding code.
-2. Never rewrite or duplicate existing code.
-3. Output **valid, syntactically correct code** only.
-4. Complete only the partially typed statement, expression, or line.
-5. Do not redeclare variables, functions, or imports that already exist in the current scope.
-6. If the cursor is at the end of a complete line or statement, return an empty string.
-7. Never include explanations, comments, or markdown; return raw code only.
-8. Avoid introducing unnecessary whitespace or new lines.
-9. If uncertain how to complete, return the minimal valid continuation.
-10. Assume the language context is provided (e.g., JavaScript, TypeScript, Python, etc.) and follow its syntax strictly.
-        `.trim(),
+You are an AI pair programmer providing inline code completions.
+Follow these rules strictly:
+1. You only write the *next part of code* after the <CURSOR> marker.
+2. Never repeat, modify, or rewrite existing code before <CURSOR>.
+3. If <CURSOR> is at the end of a complete statement or declaration, respond with an empty string.
+4. Never include comments, markdown, or explanations — return raw code only.
+5. Produce concise, syntactically correct continuations.
+6. Do not redeclare variables (e.g., if "const" already typed, do not start with "const" again).
+7. Prefer completing the line or statement the user has started.
+8. Minimize whitespace; don't add extra blank lines.
+          `.trim(),
         },
         {
           role: "user",
-          content: codeBeforeCursor,
+          content: `${codeBeforeCursor}<CURSOR>`,
         },
       ];
 
@@ -40,7 +38,12 @@ Rules:
         max_tokens: MAX_TOKENS,
       });
 
-      return response.choices?.[0]?.message?.content?.replace(/^(\s*)(const|let|var)\s+\1\2\s+/, "$1$2 ").trim() || "";
+      const text = response?.choices?.[0]?.message?.content?.trim() || "";
+
+      // Cleanup redundancy like "const const" or repeating keywords
+      const cleaned = text.replace(/\b(const|let|var)\s+\1\b/, "$1").trim();
+
+      return cleaned;
     } catch (error) {
       console.error("Error in CodeCompletion.getCodeCompletion:", error);
       return "";

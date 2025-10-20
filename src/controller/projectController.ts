@@ -7,6 +7,7 @@ import { buildTree, TreeNode } from "../service/treeNodeBuilder.js";
 import { sendResponse } from "../types/apiResponse.js";
 import { CodeCompletion } from "../service/bricksCodeCompletion.js";
 import { ProcessSocket } from "../sockets/socket.process.js";
+import { __projectDescription } from "../service/projectDescription.js";
 
 /**
  * 
@@ -29,10 +30,12 @@ export const createNewProject = async (req: Request, res: Response): Promise<voi
             return;
         }
 
+        const _des: string = await __projectDescription(project_name, project_description);
+
         const project = await Project.create({
             userId,
             name: project_name,
-            description: project_description,
+            description: _des,
             web_technology: web_tech,
             tech_language: tech_lan
         })
