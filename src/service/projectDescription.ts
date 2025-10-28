@@ -8,8 +8,9 @@ export const __projectDescription = async (_projectName: string, __projectDes: s
         {
           role: "system",
           content: `You are a professional AI assistant that writes concise and engaging project descriptions.
-          Keep the tone clear, modern, and relevant to developers and potential users.
-          Limit to 2 short sentence or tagline.`,
+  Keep the tone clear, modern, and relevant to developers and potential users.
+  Limit to 2 short sentences or a tagline.
+  Respond with the description **only**, no explanations, quotes, or introductory phrases.`,
         },
         {
           role: "user",
@@ -22,7 +23,7 @@ export const __projectDescription = async (_projectName: string, __projectDes: s
       max_tokens: 80,
     });
 
-    const _des = response?.choices?.[0]?.message?.content?.trim();
+    const _des = response?.choices?.[0]?.message?.content?.replace(/^["'`]+|["'`]+$/g, '')?.trim();
     const fallback = __projectDes || _projectName;
     return _des && _des.length > 0 ? _des : fallback;
   } catch (error) {
