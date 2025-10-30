@@ -125,7 +125,7 @@ export class BRICKS_AI_ENGINE {
 
             //? Prepare messages for AI
             const messages: ChatCompletionMessageParam[] = [
-                ...(contextText ? [{ role: "assistant" as "user" | "assistant", content: `Relevant file context:\n${contextText}` }] : []),
+                ...(contextText ? [{ role: "assistant" as "user" | "assistant", content: `Relevant file context:\n${contextText} strictly use it only if you think its that file Reffered by user` }] : []),
                 ...history.reverse().map((msg) => ({
                     role: msg.role as "user" | "assistant",
                     content:

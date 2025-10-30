@@ -7,7 +7,8 @@ export interface IBricksMessage extends Document {
   projectId: mongoose.Types.ObjectId;
   role: "user" | "assistant";
   content: string;
-  createdAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const BricksMessages = new mongoose.Schema<IBricksMessage>(

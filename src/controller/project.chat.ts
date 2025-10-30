@@ -40,7 +40,7 @@ export const projectBricksChatTabs = async (req: Request, res: Response): Promis
 
     const tabs = await bricks_chats
       .find(query)
-      .sort({ createdAt: 1 })
+      .sort({ createdAt: -1 })
       .limit(limit);
 
     const nextCursor: Date | null = tabs.length > 0
@@ -106,7 +106,7 @@ export const bricksChatRecoll = async (req: Request, res: Response): Promise<voi
     }
 
     const chatHistory = await bricks_message.find({ userId, chatId })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: 1 })
       .lean();
 
     sendResponse(res, 200, { success: true, message: "Successfully fetched History", data: chatHistory });
