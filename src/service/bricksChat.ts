@@ -8,7 +8,7 @@ import getVectorEmbedding from "./vectorTransformer.js";
 import mongoose from "mongoose";
 
 const MAX_MESSAGE_LENGTH = 2000;
-const HISTORY_LIMIT = 3; 
+const HISTORY_LIMIT = 3;
 
 export class BRICKS_AI_ENGINE {
     //! Generate a dynamic chat name from the first prompt
@@ -80,7 +80,7 @@ export class BRICKS_AI_ENGINE {
         userId: mongoose.Types.ObjectId,
         projectId: string,
         prompt: string
-    ): Promise<{ chat: IBricksChat | null, result: string}> {
+    ): Promise<{ chat: IBricksChat | null, result: string }> {
         try {
             //? Ensure chat exists
             let chat = chatId
@@ -125,17 +125,46 @@ export class BRICKS_AI_ENGINE {
 
             //? Prepare messages for AI
             const messages: ChatCompletionMessageParam[] = [
-                ...(contextText ? [{ role: "assistant" as "user" | "assistant", content: `Relevant file context:\n${contextText} strictly use it only if you think its that file Reffered by user` }] : []),
-                ...history.reverse().map((msg) => ({
+                {
+                    role: "system",
+                    content: `
+You are Bricks AI — a highly expressive and helpful AI developer assistant. 
+Always respond clearly, concisely, and naturally.
+
+✅ Use markdown formatting where relevant:
+- Use **bold**, *italics*, and \`inline code\` for clarity.  
+- Use bullet points or tables when listing things.  
+- Use emojis when they make explanations friendlier or clearer (💡, ⚙️, ✅).  
+- Maintain readable line breaks — do not send giant paragraphs.  
+
+If the user asks for code, wrap it in proper fenced code blocks with language tags.
+If the question relates to files, use the provided context *only if clearly relevant*.
+    `,
+                },
+
+                ...(contextText
+                    ? [
+                        {
+                            role: "assistant" as "user" | "assistant",
+                            content: `Relevant file context:\n${contextText}\n(Use only if it directly relates to the user's question)`,
+                        },
+                    ]
+                    : []),
+
+                ...history.map((msg) => ({
                     role: msg.role as "user" | "assistant",
                     content:
                         msg.content.length > MAX_MESSAGE_LENGTH
                             ? msg.content.slice(-MAX_MESSAGE_LENGTH)
                             : msg.content,
                 })),
+
                 {
                     role: "user",
-                    content: prompt.length > MAX_MESSAGE_LENGTH ? prompt.slice(-MAX_MESSAGE_LENGTH) : prompt,
+                    content:
+                        prompt.length > MAX_MESSAGE_LENGTH
+                            ? prompt.slice(-MAX_MESSAGE_LENGTH)
+                            : prompt,
                 },
             ];
 
@@ -158,7 +187,7 @@ export class BRICKS_AI_ENGINE {
             return { chat: chat, result: aiMessage };
         } catch (error) {
             console.error("Error in projectChatSupport:", error);
-            return { chat: null, result: "An error occurred while processing your request."};
+            return { chat: null, result: "An error occurred while processing your request." };
         }
     }
 }

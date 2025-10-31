@@ -87,6 +87,7 @@ export const projectBricksChat = async (req: Request, res: Response): Promise<vo
       id: uIdProvider(),
       role: "assistant",
       content: Airesult.result,
+      isNew: true
     }
     sendResponse(res, 200, { success: true, message: "Ai Response", data: { message: result, chat: Airesult.chat } });
   } catch (error) {
@@ -109,7 +110,12 @@ export const bricksChatRecoll = async (req: Request, res: Response): Promise<voi
       .sort({ createdAt: 1 })
       .lean();
 
-    sendResponse(res, 200, { success: true, message: "Successfully fetched History", data: chatHistory });
+    const enrichedChatHistory = chatHistory.map(chat => ({
+      ...chat,
+      isNew: false,
+    }));
+
+    sendResponse(res, 200, { success: true, message: "Successfully fetched History", data: enrichedChatHistory });
   } catch (error) {
     console.error("Error Getting FS: Project:", error);
     sendResponse(res, 500, { success: false, message: "Internal Server Error" });
