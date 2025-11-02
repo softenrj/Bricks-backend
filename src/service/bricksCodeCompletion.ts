@@ -1,7 +1,7 @@
 import { AI_MODULE } from "../config/groqSdkConfig.js";
 import { ChatCompletionMessageParam } from "groq-sdk/resources/chat.mjs";
 
-const MAX_TOKENS = 120;
+const MAX_TOKENS = 500;
 const TEMPERATURE = 0.4;
 
 export class CodeCompletion {
