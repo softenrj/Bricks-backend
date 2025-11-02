@@ -8,6 +8,7 @@ import { sendResponse } from "../types/apiResponse.js";
 import { CodeCompletion } from "../service/bricksCodeCompletion.js";
 import { ProcessSocket } from "../sockets/socket.process.js";
 import { __projectDescription } from "../service/projectDescription.js";
+import { FullCodeCompletion } from "../service/fullCodeCompletion.js";
 
 /**
  * 
@@ -322,14 +323,42 @@ export const bricksCodeCompletion = async (req: Request, res: Response): Promise
         ProcessSocket.pushStatus({
             status: true,
             message: "Generating suggestions… hang tight!"
-        },userId)
+        }, userId)
         const __sugges = await CodeCompletion.getCodeCompletion(decodedContent);
         const encode = Buffer.from(__sugges, 'utf-8').toString('base64');
         ProcessSocket.pushStatus({
             status: false,
             message: "Code suggestions ready!"
-        },userId)
+        }, userId)
         sendResponse(res, 200, { success: true, message: "Bricks:code__sugg__", data: encode });
+    } catch (error) {
+        console.error("Error Code sugg: Project:", error);
+        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    }
+}
+
+export const bricksCodeImprovement = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            sendResponse(res, 401, { success: false, message: "Unauthorized" });
+            return;
+        }
+
+        const { context } = req.body;
+        const decodedContent = atob(context);
+        ProcessSocket.pushStatus({
+            message: "Generating Full code.. hang tight!",
+            status: true
+        },userId);
+
+        const cleanCode = await FullCodeCompletion.getCodeCompletion(decodedContent);
+        const encodeCode = Buffer.from(cleanCode, 'utf-8').toString('base64');
+        ProcessSocket.pushStatus({
+            status: false,
+            message: "Code is ready!"
+        }, userId)
+        sendResponse(res, 200, { success: true, message: "Bricks:code__Comp__", data: encodeCode });
     } catch (error) {
         console.error("Error Code sugg: Project:", error);
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });

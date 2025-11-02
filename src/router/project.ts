@@ -24,6 +24,7 @@ router.get('/bricks-arch-projects-list-export', isAuth, projectController.export
 router.get('/bricks-project-files/:projectId', isAuth, projectController.projectFileTree)
 
 router.post('/bricks-code-sugg', isAuth, projectController.bricksCodeCompletion)
+router.post('/bricks-code-improvement', isAuth, projectController.bricksCodeImprovement)
 
 
 export const projectRouter = router;
