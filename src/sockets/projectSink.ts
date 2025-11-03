@@ -5,10 +5,10 @@ import { CortexPipeline } from "../pipelines/CortexPipeline.js";
 import { RealtimeStatusSocket } from "./socket.RealTime.js";
 import { uIdProvider } from "../service/user.uidProvider.js";
 
-const projectUpdate = async (path: string, fsContent: string, name: string, userId: mongoose.Types.ObjectId): Promise<boolean> => {
+const projectUpdate = async (path: string, fsContent: string, name: string, userId: mongoose.Types.ObjectId, projectId: mongoose.Types.ObjectId): Promise<boolean> => {
   try {
     const projectFile = await ProjectFile.findOneAndUpdate(
-      { path, name, userId },
+      { path, name, userId, projectId },
       { content: fsContent },
     );
 
@@ -33,9 +33,9 @@ const projectUpdate = async (path: string, fsContent: string, name: string, user
 export const projectSocket = (socket: Socket) => {
   // Update file content
   socket.on("file:update", async (req) => {
-    const { path, fsContent, name } = req;
+    const { path, fsContent, name, projectId } = req;
     const userId = socket.data.userId;
-    const success = await projectUpdate(path.trim(), fsContent, name.trim(), userId);    
+    const success = await projectUpdate(path.trim(), fsContent, name.trim(), userId, projectId);    
     socket.emit("file:update:ack", { path, name, success });
   });
 
@@ -67,10 +67,10 @@ export const projectSocket = (socket: Socket) => {
 
   // Remove a file
   socket.on("file:remove", async (req) => {
-    const { path, name } = req;
+    const { path, name, projectId } = req;
     const userId = socket.data.userId;
     try {
-      const result = await ProjectFile.deleteOne({ path, name, userId });
+      const result = await ProjectFile.deleteOne({ path, name, userId, projectId });
       console.log(path,name,result)
       socket.emit("file:remove:ack", { path, name, success: result.deletedCount > 0 });
     } catch (err) {
@@ -81,11 +81,11 @@ export const projectSocket = (socket: Socket) => {
 
   // Rename a file
   socket.on("file:rename", async (req) => {
-    const { path, oldName, name } = req;
+    const { path, oldName, name, projectId } = req;
     const userId = socket.data.userId;
     try {
       const result = await ProjectFile.findOneAndUpdate(
-        { path, name: oldName, userId },
+        { path, name: oldName, userId, projectId },
         { name },
       );
       socket.emit("file:rename:ack", { path, oldName, name, success: !!result });

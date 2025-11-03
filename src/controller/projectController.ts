@@ -345,14 +345,14 @@ export const bricksCodeImprovement = async (req: Request, res: Response): Promis
             return;
         }
 
-        const { context } = req.body;
+        const { context, fileName, fileLanguage } = req.body;
         const decodedContent = atob(context);
         ProcessSocket.pushStatus({
             message: "Generating Full code.. hang tight!",
             status: true
         },userId);
 
-        const cleanCode = await FullCodeCompletion.getCodeCompletion(decodedContent);
+        const cleanCode = await FullCodeCompletion.getCodeCompletion(decodedContent, fileName, fileLanguage);
         const encodeCode = Buffer.from(cleanCode, 'utf-8').toString('base64');
         ProcessSocket.pushStatus({
             status: false,
