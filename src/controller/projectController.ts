@@ -319,18 +319,16 @@ export const bricksCodeCompletion = async (req: Request, res: Response): Promise
         }
 
         const { context } = req.body;
-        const decodedContent = atob(context);
         ProcessSocket.pushStatus({
             status: true,
             message: "Generating suggestions… hang tight!"
         }, userId)
-        const __sugges = await CodeCompletion.getCodeCompletion(decodedContent);
-        const encode = Buffer.from(__sugges, 'utf-8').toString('base64');
+        const __sugges = await CodeCompletion.getCodeCompletion(context);
         ProcessSocket.pushStatus({
             status: false,
             message: "Code suggestions ready!"
         }, userId)
-        sendResponse(res, 200, { success: true, message: "Bricks:code__sugg__", data: encode });
+        sendResponse(res, 200, { success: true, message: "Bricks:code__sugg__", data: __sugges });
     } catch (error) {
         console.error("Error Code sugg: Project:", error);
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
@@ -346,19 +344,17 @@ export const bricksCodeImprovement = async (req: Request, res: Response): Promis
         }
 
         const { context, fileName, fileLanguage } = req.body;
-        const decodedContent = atob(context);
         ProcessSocket.pushStatus({
             message: "Generating Full code.. hang tight!",
             status: true
         },userId);
 
-        const cleanCode = await FullCodeCompletion.getCodeCompletion(decodedContent, fileName, fileLanguage);
-        const encodeCode = Buffer.from(cleanCode, 'utf-8').toString('base64');
+        const cleanCode = await FullCodeCompletion.getCodeCompletion(context, fileName, fileLanguage);
         ProcessSocket.pushStatus({
             status: false,
             message: "Code is ready!"
         }, userId)
-        sendResponse(res, 200, { success: true, message: "Bricks:code__Comp__", data: encodeCode });
+        sendResponse(res, 200, { success: true, message: "Bricks:code__Comp__", data: cleanCode });
     } catch (error) {
         console.error("Error Code sugg: Project:", error);
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
