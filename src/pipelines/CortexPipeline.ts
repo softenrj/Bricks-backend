@@ -22,12 +22,12 @@ export async function CortexPipeline(projectFile: IProjectFile, userId: mongoose
     const projectId = projectFile.projectId;
     const fileId = projectFile._id;
     const fileName = projectFile.name;
-    const decodedContent = projectFile.content ? decodeBase64Encoding(projectFile.content) : '';
+    const content = projectFile.content || "";
     // #endregion
 
     // #region ------------------------- FILE CONTEXT -------------------------
     //! Use AST to extract snippet, imports, exports, dependencies, lines, fileType
-    const context: FileContextResult = extractFileContextAST(fileName, decodedContent);
+    const context: FileContextResult = extractFileContextAST(fileName, content);
     const { snippet, imports, exports, lines, dependencies, fileType } = context;
 
     /**
