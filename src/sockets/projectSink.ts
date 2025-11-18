@@ -41,10 +41,11 @@ export const projectSocket = (socket: Socket) => {
 
   // Add new file
   socket.on("file:add", async (req) => {
-    const { path, name, projectId } = req;
+    const { path, name, projectId, content } = req;
     const userId = socket.data.userId;
+    const fileContent = content || ""
     try {
-      const newFile = await ProjectFile.create({ path, name, content: "", type: 'file', userId, projectId });
+      const newFile = await ProjectFile.create({ path, name, content: fileContent, type: 'file', userId, projectId });
       socket.emit("file:add:ack", { path, name, success: !!newFile });
     } catch (err) {
       console.error(err);

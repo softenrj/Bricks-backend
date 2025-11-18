@@ -61,6 +61,17 @@ export function extractFileContextAST(
   fileContent: string,
   targetIdentifier?: string
 ): FileContextResult {
+  
+  if (fileName.endsWith(".json")) {
+    return {
+      snippet: fileContent,
+      imports: [],
+      exports: [],
+      dependencies: [],
+      lines: fileContent.split("\n").length,
+      fileType: "json",
+    };
+  }
   const fileType = getFileType(fileName);
 
   let snippet = fileContent;
@@ -108,7 +119,7 @@ export function extractFileContextAST(
         }
       });
     }
-  } 
+  }
 
   else if ([FileType.HTML, FileType.CSS, FileType.MD].includes(fileType)) {
     if (fileType === FileType.HTML) {
