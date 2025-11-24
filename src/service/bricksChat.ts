@@ -7,8 +7,8 @@ import { FileVector } from "../model/file_vectors.js";
 import getVectorEmbedding from "./vectorTransformer.js";
 import mongoose from "mongoose";
 
-const MAX_MESSAGE_LENGTH = 2000;
-const HISTORY_LIMIT = 3;
+export const MAX_MESSAGE_LENGTH = 2000;
+export const HISTORY_LIMIT = 3;
 
 export class BRICKS_AI_ENGINE {
     //! Generate a dynamic chat name from the first prompt
@@ -51,7 +51,7 @@ export class BRICKS_AI_ENGINE {
      * @param prompt 
      * @returns 
      */
-    private static async _initialize_bricks_chat_(
+    public static async _initialize_bricks_chat_(
         userId: mongoose.Types.ObjectId,
         projectId: string,
         prompt: string
@@ -73,13 +73,15 @@ export class BRICKS_AI_ENGINE {
      * @param userId 
      * @param projectId 
      * @param prompt 
+     * @param stream 
      * @returns 
      */
     public static async projectChatSupport(
         chatId: string | undefined,
         userId: mongoose.Types.ObjectId,
         projectId: string,
-        prompt: string
+        prompt: string,
+        stream: boolean = false
     ): Promise<{ chat: IBricksChat | null, result: string }> {
         try {
             //? Ensure chat exists
@@ -169,11 +171,13 @@ If the question relates to files, use the provided context *only if clearly rele
             ];
 
 
+
+
             //? Get AI response
             const response = await AI_MODULE.chat.completions.create({
                 model: "llama-3.1-8b-instant",
                 messages,
-                temperature: 0.7,
+                temperature: 0.7
             });
 
             const aiMessage = response.choices?.[0]?.message?.content?.trim() || "Hmm, I’m not sure about that.";
@@ -190,4 +194,6 @@ If the question relates to files, use the provided context *only if clearly rele
             return { chat: null, result: "An error occurred while processing your request." };
         }
     }
+
+
 }

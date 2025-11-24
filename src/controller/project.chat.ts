@@ -5,6 +5,7 @@ import { BRICKS_AI_ENGINE } from "../service/bricksChat.js";
 import { Message } from "../types/AIMessage.js";
 import { uIdProvider } from "../service/user.uidProvider.js";
 import bricks_message from "../model/bricks_message.js";
+import { BRICKSCHATSSE_SERVICE } from "../serversideevents/bricks.chat.sse.js";
 
 
 /**
@@ -59,8 +60,13 @@ export const projectBricksChatTabs = async (req: Request, res: Response): Promis
   }
 };
 
-
-export const projectBricksChat = async (req: Request, res: Response): Promise<void> => {
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
+export const projectBricksChatMetaData = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
     const projectId = req.params.projectId;
@@ -79,6 +85,47 @@ export const projectBricksChat = async (req: Request, res: Response): Promise<vo
     if (!prompt || prompt.trim() == '') {
       sendResponse(res, 401, { success: false, message: "Prompt cannot be empty." })
       return;
+    }
+
+    const chat = await BRICKSCHATSSE_SERVICE.getChatObject(chatId,userId,projectId,prompt)
+    sendResponse(res, 200, { success: true, message: "bricks chat metadata", data: chat});
+  } catch (error) {
+    console.error("Error Getting Chat Metadata: ", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
+}
+
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
+export const projectBricksChat = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    const projectId = req.params.projectId;
+    const { chatId, prompt, stream = false } = req.body;
+    console.log(req.body)
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
+    }
+
+    if (!projectId) {
+      sendResponse(res, 401, { success: false, message: "ChatId or Project Id is Envalid please try again." })
+      return;
+    }
+
+    if (!prompt || prompt.trim() == '') {
+      sendResponse(res, 401, { success: false, message: "Prompt cannot be empty." })
+      return;
+    }
+
+    console.log("stream: --------",stream)
+    if (stream) {
+      await BRICKSCHATSSE_SERVICE.processChat(req,res);
+      return ;
     }
 
     const Airesult = await BRICKS_AI_ENGINE.projectChatSupport(chatId, userId, String(projectId), prompt);
