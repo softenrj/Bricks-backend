@@ -72,6 +72,8 @@ export async function CortexPipeline(projectFile: IProjectFile, userId: mongoose
       );
     }
 
+    const isLockFile = projectFile.name === "package-lock.json";
+    if (isLockFile) return;
     const vectorCollection = await upsertVector();
 
     if (vectorCollection) {

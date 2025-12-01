@@ -23,6 +23,49 @@ export function buildTree(files: IProjectFile[]): TreeNode {
 
     return root;
 }
+export function buildAsciiTree(files: IProjectFile[]): string {
+  const root: any = {};
+
+  for (const file of files) {
+    const fullPath =
+      file.path === "." ? file.name : file.path + "/" + file.name;
+
+    const parts = fullPath.split("/").filter(Boolean);
+    let current = root;
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const isFile = i === parts.length - 1;
+
+      if (!current[part]) current[part] = isFile ? null : {};
+      if (!isFile) current = current[part];
+    }
+  }
+  return ".\n" + renderAscii(root, "");
+}
+
+function renderAscii(node: any, prefix: string): string {
+  const entries = Object.keys(node);
+  let output = "";
+
+  entries.forEach((key, index) => {
+    const isLast = index === entries.length - 1;
+    const connector = isLast ? "└── " : "├── ";
+
+    if (node[key] === null) {
+      // file
+      output += `${prefix}${connector}${key}\n`;
+    } else {
+      // folder
+      output += `${prefix}${connector}${key}/\n`;
+
+      const newPrefix = prefix + (isLast ? "    " : "│   ");
+      output += renderAscii(node[key], newPrefix);
+    }
+  });
+
+  return output;
+}
 
 export function buildContextTree(
   files: IProjectFile[]
