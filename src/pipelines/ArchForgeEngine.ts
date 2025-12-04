@@ -5,6 +5,8 @@ import getVectorEmbedding from "../service/vectorTransformer.js";
 import { FileVector } from "../model/file_vectors.js";
 import { IProjectFile, ProjectFile } from "../model/project_files.js";
 import { buildAsciiTree, buildTree, TreeNode } from "../service/treeNodeBuilder.js";
+import { AI_MODULE } from "../config/groqSdkConfig.js";
+import { ChatCompletionCreateParams, ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions.mjs";
 
 /**
  * todo
@@ -25,7 +27,25 @@ interface Process {
     cursor_fileId: mongoose.Types.ObjectId;
 }
 
-
+interface ArchFileContext {
+    _id: mongoose.Types.ObjectId;
+    context: {
+        fileId: mongoose.Types.ObjectId;
+        snippet: string;
+        filePath: string;
+        imports: string[];
+        exports: string[];
+        fileType: string;
+        isDefault: boolean;
+    }
+}
+export type FileAction = "create" | "modify" | "retain";
+export interface ProjectPlan {
+  [filePath: string]: {
+    description: string;
+    action: FileAction; 
+  };
+}
 class ArchForge {
 
     public static async _process_(processArgs: Process) {
@@ -49,6 +69,7 @@ class ArchForge {
         return safePrompt.trim();
     }
 
+    // #region ------- Laxical ArchPipeLine --------
     /**
      * ! laxical ArchPipeLine
      * @param processArgs 
@@ -88,19 +109,29 @@ class ArchForge {
                         imports: 1,
                         exports: 1,
                         snippet: 1,
-                        fileId: 1
+                        fileId: 1,
+                        fileType: 1,
+                        filePath: 1,
                     }
                 }
             },
             ])
+            /**
+             * Now we have the Most Promising Files to work with
+             * ? context
+             * ? And Project Tree in Acii Format 
+             */
 
-            // console.log(relatedFiles)
-            this.projectTree(projectId,userId)
+            const codeBase = await this.projectTree(projectId, userId)
+
+            //todo pass to Next 
+            console.log(await this.archProjectPlanner(relatedFiles,codeBase,prompt))
         } catch (error) {
             console.error("Error in lexicalArchEngin:", error);
             return null;
         }
     }
+    // #endregion
 
     /**
      * 
@@ -108,108 +139,118 @@ class ArchForge {
      * @param userId 
      * @returns 
      */
-    private static async projectTree(projectId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId): Promise<any> {
+    private static async projectTree(projectId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId): Promise<string> {
         try {
-            const projectFile = (await ProjectFile.find({ projectId, userId },{ content: 0 }).lean()) as unknown as IProjectFile[];
+            const projectFile = (await ProjectFile.find({ projectId, userId }, { content: 0 }).lean()) as unknown as IProjectFile[];
 
             const treeNode = buildAsciiTree(projectFile);
-            console.log(treeNode);
+            return treeNode;
         } catch (error) {
             console.error("Error in ProjectTree ArchEngin:", error);
-            return null;
+            return "";
         }
     }
 
+    // #region ------ AI planner ------
+    /**
+     * 
+     * @param fileContext 
+     * @param codeBase 
+     * @returns 
+     */
+    public static async archProjectPlanner(
+        fileContexts: ArchFileContext[],
+        projectTree: string,
+        userPrompt: string
+    ): Promise<ProjectPlan> {
+        try {
+            const optimizedContext = this.formatContextForPlanner(fileContexts);
+
+            const systemPrompt = `
+                You are a Senior Software Architect. 
+                Your goal is to plan a file structure changes based on a User Request.
+
+                INPUT DATA:
+                1. **Project Tree**: The current folder structure.
+                2. **Existing Exports**: A summary of existing files and what they export.
+
+                INSTRUCTIONS:
+                - Analyze the User Request against the existing structure.
+                - **CRITICAL:** You must decide the "action" for each file:
+                   - "create": New file needed.
+                   - "modify": Existing file needs changes (add code/fix bugs).
+                   - "retain": Existing file is perfect, NO changes needed.
+                   - DO NOT include any useless files only files that need to create or modified
+
+                - Return a JSON object where keys are file paths and values are objects containing:
+                   - "description": Purpose of the file.
+                   - "action": One of "create", "modify", "retain".
+
+                STRICT OUTPUT FORMAT (JSON ONLY):
+                {
+                  "src/components/Header.tsx": { "description": "Add user login state", "action": "modify" },
+                  "src/components/Footer.tsx": { "description": "Standard footer", "action": "retain" },
+                  "src/pages/NewPage.tsx": { "description": "New marketing page", "action": "create" }
+                }
+            `;
+
+            // C. Construct User Message
+            const userMessage = `
+                Current Project Tree:
+                ${projectTree}
+                Existing File Context (Exports & Types):
+                ${optimizedContext}
+                USER REQUEST:
+                "${userPrompt}"
+            `;
+
+            const messages: ChatCompletionMessageParam[] = [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userMessage }
+            ];
+
+            // D. Call AI Model
+            const completion = await AI_MODULE.chat.completions.create({
+                model: "llama-3.1-8b-instant", // or gpt-4o for complex architecture
+                messages: messages,
+                temperature: 0.3, // Low temp for structural consistency
+                response_format: { type: "json_object" }
+            });
+
+            const content = completion.choices[0]?.message?.content || "{}";
+
+            // E. Parse & Validate
+            const plan: ProjectPlan = JSON.parse(content);
+            // todo Planner Done There Job
+            return plan;
+        } catch (error) {
+            console.error(" ArchEngine Planner Error:", error);
+            // Return empty plan ensures pipeline doesn't crash, just stops
+            return {};
+        }
+    }
+    // #endregion
+
+    /**
+     * 
+     * @param files 
+     * @returns 
+     */
+    private static formatContextForPlanner = (files: ArchFileContext[]): string => {
+        return files.map(f => {
+            return `File: ${f.context.filePath}
+            Type: ${f.context.fileType}
+            Exports: ${f.context.exports.join(", ")}`;
+        }).join("\n---\n");
+    };
+
 }
+
+//! Test case ( Unit Test )
 ArchForge._process_({
-    prompt: "A clean Task manager App",
+    prompt: "Create A Amazon Clone",
     userId: new mongoose.Types.ObjectId("68cc11742daa63367d44b061"),
     projectId: new mongoose.Types.ObjectId("6926f4f4c1ae883c414eb5e5"),
     cursor_fileId: new mongoose.Types.ObjectId("6926f4f5c1ae883c414eb5f6")
 })
-
-// ! Related files Example
-//   {
-//     _id: new ObjectId('6926f6562a0d188402110add'),
-//     context: {
-//       fileId: new ObjectId('6926f4f5c1ae883c414eb5ed'),
-//       exports: [],
-//       imports: [],
-//       isDefault: false,
-//       snippet: '{\n' +
-//         '  "name": "Bricks-stater-template-ts",\n' +
-//         '  "private": true,\n' +
-//         '  "version": "0.0.0",\n' +
-//         '  "type": "module",\n' +
-//         '  "scripts": {\n' +
-//         '    "dev": "vite",\n' +
-//         '    "build": "tsc -b && vite build",\n' +
-//         '    "lint": "eslint .",\n' +
-//         '    "preview": "vite preview"\n' +
-//         '  },\n' +
-//         '  "dependencies": {\n' +
-//         '    "@dnd-kit/core": "^6.3.1",\n' +
-//         '    "@dnd-kit/modifiers": "^9.0.0",\n' +
-//         '    "@dnd-kit/sortable": "^10.0.0",\n' +
-//         '    "@radix-ui/react-avatar": "^1.1.11",\n' +
-//         '    "@tailwindcss/vite": "^4.1.14",\n' +
-//         '    "class-variance-authority": "^0.7.1",\n' +
-//         '    "clsx": "^2.1.1",\n' +
-//         '    "framer-motion": "^12.23.24",\n' +
-//         '    "lucide-react": "^0.555.0",\n' +
-//         '    "nanoid": "^5.1.6",\n' +
-//         '    "react": "^19.1.1",\n' +
-//         '    "react-dom": "^19.1.1",\n' +
-//         '    "tailwind-merge": "^3.4.0",\n' +
-//         '    "tailwindcss": "^4.1.14"\n' +
-//         '  },\n' +
-//         '  "devDependencies": {\n' +
-//         '    "@eslint/js": "^9.36.0",\n' +
-//         '    "@types/react": "^19.1.13",\n' +
-//         '    "@types/react-dom": "^19.1.9",\n' +
-//         '    "@vitejs/plugin-react": "^5.0.3",\n' +
-//         '    "eslint": "^9.36.0",\n' +
-//         '    "eslint-plugin-react-hooks": "^5.2.0",\n' +
-//         '    "eslint-plugin-react-refresh": "^0.4.20",\n' +
-//         '    "globals": "^16.4.0",\n' +
-//         '    "tw-animate-css": "^1.4.0",\n' +
-//         '    "typescript": "~5.8.3",\n' +
-//         '    "typescript-eslint": "^8.44.0",\n' +
-//         '    "vite": "^7.1.7"\n' +
-//         '  }\n' +
-//         '}\n'
-//     },
-//     score: 0.5700703859329224
-//   }
-
-// ! Tree
-// .
-// ├── tsconfig.node.json
-// ├── vite.config.ts
-// ├── tsconfig.json
-// ├── tsconfig.app.json
-// ├── README.md
-// ├── package.json
-// ├── index.html
-// ├── eslint.config.js
-// ├── .gitignore
-// ├── src/
-// │   ├── main.tsx
-// │   ├── index.css
-// │   ├── assets/
-// │   │   └── react.svg
-// │   ├── App.tsx
-// │   ├── components/
-// │   │   ├── ui/
-// │   │   │   ├── alert.tsx
-// │   │   │   ├── avatar.tsx
-// │   │   │   └── select.tsx
-// │   │   ├── SortableTask.tsx
-// │   │   └── TaskCard.tsx
-// │   └── lib/
-// │       └── utils.ts
-// ├── public/
-// │   └── vite.svg
-// ├── package-lock.json
-// └── components.json
-
+// ! it Getting Exelerating

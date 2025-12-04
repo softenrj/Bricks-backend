@@ -38,7 +38,7 @@ export async function CortexPipeline(projectFile: IProjectFile, userId: mongoose
     async function upsertContext() {
       return await FileContext.findOneAndUpdate(
         { projectId, fileId },
-        { snippet, imports, exports, dependencies, lines, fileType },
+        { snippet, imports, exports, dependencies, lines, fileType, filePath: projectFile.path },
         { upsert: true, new: true }
       );
     }
