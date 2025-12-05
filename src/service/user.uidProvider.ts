@@ -7,3 +7,7 @@ export const userIdProvider = () => {
 export const uIdProvider = () => {
   return uid(16);
 };
+
+export const processIdProvider = () => {
+  return uid(36);
+};
