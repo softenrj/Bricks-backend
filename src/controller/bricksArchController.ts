@@ -12,11 +12,11 @@ export const archForgeCodeGenBricks = async (req: Request, res: Response): Promi
             return;
         }
         const {projectId, cursor_fileId, prompt = ""} = req.body;
-        if (!projectId || !cursor_fileId) {
-            sendResponse(res, 400, { success: false, message: "Missing or Invalid Project Id or Cursor_file Id" });
+        if (!projectId) {
+            sendResponse(res, 400, { success: false, message: "Missing or Invalid Project Id " });
             return;
         }
-        ArchForge._process_({
+        await ArchForge._process_({
             userId, projectId, cursor_fileId, prompt
         })
         sendResponse(res, 200, { success: true, message: "Process is Running", data: [] });

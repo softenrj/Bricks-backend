@@ -77,7 +77,7 @@ export default class ArchForge {
             const { prompt, projectId, userId, cursor_fileId } = processArgs;
             //? Inform to User
             const processId = processIdProvider();
-            this.pushToUser("🔍 Analyzing your request and scanning related project files...", projectId,userId,processId,"render");
+            this.pushToUser("🔍 Analyzing your request and scanning related project files...", projectId, userId, processId, "render");
             const queryVector = await getVectorEmbedding(prompt);
             const relatedFiles = await FileVector.aggregate([{
                 $vectorSearch: {
@@ -125,11 +125,11 @@ export default class ArchForge {
             const codeBase = await this.projectTree(projectId, userId)
 
             //? Inform to User
-            this.pushToUser("-", projectId,userId,processId,"complete");
+            this.pushToUser("-", projectId, userId, processId, "complete");
             //todo pass to Next 
-            const plannerScript = await this.archProjectPlanner(relatedFiles, codeBase, prompt,projectId,userId);
+            const plannerScript = await this.archProjectPlanner(relatedFiles, codeBase, prompt, projectId, userId);
             //todo Recursive File Generation
-            this.ArchCodeGenerator(plannerScript, projectId,userId)
+            this.ArchCodeGenerator(plannerScript, projectId, userId)
         } catch (error) {
             console.error("Error in lexicalArchEngin:", error);
             return null;
@@ -162,64 +162,93 @@ export default class ArchForge {
      * @param projectId 
      * @returns 
      */
-    private static async ArchCodeGenerator(planedScript: ProjectPlan, projectId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId): Promise<void> {
+    private static async ArchCodeGenerator(
+        planedScript: ProjectPlan,
+        projectId: mongoose.Types.ObjectId,
+        userId: mongoose.Types.ObjectId
+    ): Promise<void> {
         try {
-            //? Whole PlannedCodeBase Keys
-            const otherFilesContext = Object.entries(planedScript)
-                .map(([path, info]) => `- ${path}: ${info.description}`)
-                .join('\n');
-            //! For each Files
-            for (const [filePath, info] of Object.entries(planedScript)) {
-                const tempProcessId = processIdProvider()
+
+            let planKeys = Object.keys(planedScript);
+
+            for (let i = 0; i < planKeys.length; i++) {
+                const filePath = planKeys[i];
+                const info = planedScript[filePath];
+
+                const tempProcessId = processIdProvider();
                 const action = info.action;
-                this.pushToUser(`🛠️ ${action === 'create' ? 'Creating' : 'Modifying'}: ${filePath} • ${info.description}`, projectId,userId,tempProcessId,"render");
-                let fileCode = null;
-                if (action === 'modify') {
+
+                if (action === "retain") continue;
+
+                let fileCode: string | null = null;
+
+                if (action === "modify") {
                     fileCode = await this.fileCodeProvider(filePath, projectId);
                 }
-                if (action === 'retain') continue;
+                const otherFilesContext = Object.entries(planedScript)
+                    .map(([path, info]) => `- ${path}: ${info.description}`)
+                    .join("\n");
 
-                    const systemPrompt = `You are a Senior Full Stack Architect and Lead Developer. 
-                    Your goal is to write production-ready, bug-free code for a specific file in a React/TypeScript project.
+                this.pushToUser(
+                    `🛠️ ${action === "create" ? "Creating" : "Modifying"}: ${filePath} • ${info.description}`,
+                    projectId,
+                    userId,
+                    tempProcessId,
+                    "render"
+                );
 
-                    ### TECHNOLOGY STACK:
+                const systemPrompt = `You are an expert Senior Full Stack React Architect. 
+                    Your specific goal is to generate or modify code for a React (Vite) + TypeScript project.
+
+                    ### TECHNOLOGY STACK PREFERENCES:
                     - Framework: React (Vite)
-                    - Language: TypeScript
-                    - Styling: Tailwind CSS (Utility-first)
+                    - Language: TypeScript (Strict mode, proper interfaces)
+                    - Styling: Tailwind CSS (Utility-first, mobile-first approach)
                     - Icons: Lucide-React
-                    - UI Library: If path includes 'components/ui', use ShadCN/Radix primitives pattern.
+                    - Architecture: Functional components, Hooks-based logic.
 
-                    ### STRICT OUTPUT RULES:
-                    1. Return ONLY a valid JSON object. No markdown, no text before/after.
-                    2. The JSON key "content" must contain the **FULL, COMPLETE CODE**.
-                    3. **NEVER** use comments like "// ... rest of code" or "// implementation here". Write every single line.
-                    4. Ensure all imports match the "Project Structure" provided.
-                    5. If creating a new component, ensure it is exported as default.
-                    6. JSON Structure:
+                    ### STRICT OUTPUT FORMAT:
+                    You must output ONLY a valid, parseable JSON object. 
+                    DO NOT include markdown blocks (like \`\`\`json). 
+                    DO NOT include conversational text.
+
+                    The JSON structure must be:
                     {
-                      "fileName": "Exact filename",
-                      "path": "Exact path provided",
-                      "content": "The raw code string, properly escaped",
-                      ...{if  dependency needed "dependency": "npm i ..."}
-                    }`;
+                      "fileName": "The filename with extension (e.g., App.tsx)",
+                      "path": "The relative file path (e.g., src/components/App.tsx)",
+                      "content": "THE_FULL_FILE_CONTENT_HERE"
+                    }
 
+                    ### CRITICAL RULES:
+                    1. **JSON Safety**: The "content" field must be a valid JSON string. You must properly escape newlines (\\n) and double quotes (\\").
+                    2. **Completeness**: Never use placeholder comments like "// ... rest of code". Return the FULL, executable code.
+                    3. **Imports**: Verify imports against the provided "PROJECT CONTEXT". Do not hallucinate files that are not listed.
+                    4. **Modifications**: If modifying an existing file, do not return a diff. Return the ENTIRE file content with the changes integrated.
+                    5. **ShadCn UI**: If the path includes 'components/ui', treat it as a standard ShadCn component—do not modify logic unless explicitly requested.
+                `;
+                            
                 const userMessage = `
-                ### TASK DETAILS
-                **Action:** ${action}
-                **Target File:** ${filePath}
-                **Purpose:** ${info.description}
+                    ### TASK REQUEST
+                    **Action:** ${action} (Values: "create" | "modify")
+                    **Target File:** ${filePath}
+                    **Description:** ${info.description}
 
-                ### PROJECT CONTEXT (Use for Imports & Logic)
-                The following files exist or are being created in this plan. Ensure your code integrates with them:
-                ${otherFilesContext}
+                    ### PROJECT CONTEXT (File Tree & Exports)
+                    Use this list to ensure imports are correct and relative paths are accurate:
+                    ${otherFilesContext}
 
-                ### INSTRUCTIONS
-                1. If "Action" is "create", write the full file from scratch using the Tech Stack.
-                2. If "Action" is "modify", merge the "Existing Code" with the "Purpose".
-                3. Use Tailwind classes for ALL styling. Make it look modern and professional (Amazon Clone style).
-                4. Handle edge cases (loading states, missing props).
+                    ${fileCode ? `
+                    ### EXISTING FILE CONTENT
+                    (You must rewrite this file completely with the requested changes applied)
+                    ${fileCode}
+                    ` : ''}
 
-                ${fileCode ? `### EXISTING CODE (MODIFY THIS)\n${fileCode}` : "### EXISTING CODE\nNone (Create from scratch)"}
+                    ### IMPLEMENTATION STEPS
+                    1. Analyze the "Description" and "Action".
+                    2. If "Action" is "create": Scaffolding a new component/file with proper Tailwind styling.
+                    3. If "Action" is "modify": Read "EXISTING FILE CONTENT", apply changes, and output the FULL merged result.
+                    4. Ensure all variables are typed (TypeScript).
+                    5. Output the final JSON.
                 `;
 
                 const messages: ChatCompletionMessageParam[] = [
@@ -227,27 +256,98 @@ export default class ArchForge {
                     { role: "user", content: userMessage }
                 ];
 
-                const completion = await AI_MODULE.chat.completions.create({
-                    model: "Llama-3.3-70B-Versatile",
-                    messages: messages,
-                    temperature: 0.3, // Low temp for structural consistency 
-                    response_format: { type: "json_object" }
-                });
+                try {
+                    const completion = await AI_MODULE.chat.completions.create({
+                        model: "Llama-3.3-70B-Versatile",
+                        messages,
+                        temperature: 0.3,
+                        response_format: { type: "json_object" }
+                    });
 
-                const content = completion.choices[0]?.message?.content || "{}";
+                    const raw = completion.choices?.[0]?.message?.content || "{}";
+                    const generatedCode: ArchProjectCode = JSON.parse(raw);
 
-                const generatedCode: ArchProjectCode = JSON.parse(content);
-                this.pushToUser("", projectId,userId,tempProcessId,"render");
-                ArchEnginStatusSocket._code({
-                    ...generatedCode,
-                    projectId: projectId
-                },userId)
+                    await this.handleMissingImports(generatedCode, planedScript);
+
+                    planKeys = Object.keys(planedScript);
+
+                    this.pushToUser("", projectId, userId, tempProcessId, "render");
+
+                    ArchEnginStatusSocket._code(
+                        {
+                            ...generatedCode,
+                            projectId
+                        },
+                        userId
+                    );
+                } catch (error) {
+                    console.error("Error:", error);
+                } finally {
+                    this.pushToUser(
+                        `🛠️ ${action === "create" ? "Creating" : "Modifying"}: ${filePath} • ${info.description}`,
+                        projectId,
+                        userId,
+                        tempProcessId,
+                        "complete"
+                    );
+                }
             }
         } catch (error) {
-            console.error("Error in ArchCodeGenerator ArchEngin:", error);
-            return;
+            console.error("ArchCodeGenerator Failed:", error);
         }
     }
+
+    /**
+     * 
+     * @param generated 
+     * @param plan 
+     */
+    private static async handleMissingImports(
+        generated: ArchProjectCode,
+        plan: ProjectPlan
+    ): Promise<void> {
+        const imports = this.extractImports(generated.content);
+
+        for (const imp of imports) {
+            const path = this.resolveImportPath(imp);
+            if (!path) continue;
+
+            if (!plan[path]) {
+                plan[path] = {
+                    description: `Auto-generated dependency for ${generated.fileName}`,
+                    action: "create"
+                };
+            }
+        }
+    }
+
+    /**
+     * 
+     * @param content 
+     * @returns 
+     */
+    private static extractImports(content: string): string[] {
+        const regex = /import\s+(?:[^;]+?)\s+from\s+['"]([^'"]+)['"]/g;
+        const imports: string[] = [];
+        let match;
+
+        while ((match = regex.exec(content)) !== null) {
+            imports.push(match[1]);
+        }
+        return imports;
+    }
+
+    private static resolveImportPath(imp: string): string | null {
+        // Skip external packages
+        if (!imp.startsWith("@/")) return null;
+
+        let path = imp.replace("@/", "src/");
+        if (!path.endsWith(".tsx")) {
+            path += ".tsx";
+        }
+        return path;
+    }
+
 
     /**
      * 
@@ -255,11 +355,22 @@ export default class ArchForge {
      * @param projectId 
      * @returns 
      */
-    private static async fileCodeProvider(filePath: string, projectId: mongoose.Types.ObjectId): Promise<string> {
+    private static async fileCodeProvider(
+        filePath: string,
+        projectId: mongoose.Types.ObjectId
+    ): Promise<string> {
         try {
-            const file = await ProjectFile.findOne({ projectId, path: filePath });
-            if (file && file.content) return file.content;
-            return ""
+            const segments = filePath.split('/');
+            const fileName = segments.pop();
+
+            const dirPath = segments.length > 0 ? segments.join('/') : "."; // "src"
+            const file = await ProjectFile.findOne({
+                name: fileName,
+                projectId,
+                path: dirPath
+            });
+
+            return file?.content ?? "";
         } catch (error) {
             console.error("Error in fileCodeProvider ArchEngin:", error);
             return "";
@@ -267,17 +378,17 @@ export default class ArchForge {
     }
     // #endregion
 
-    private static pushToUser(message: string, projectId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId,processId: string, state: "render" | "complete"): void {
+    private static pushToUser(message: string, projectId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId, processId: string, state: "render" | "complete"): void {
         try {
             ArchEnginStatusSocket.__push({
                 id: uIdProvider(),
                 processId: processId,
                 process: state,
                 message: message
-            },userId)
+            }, userId)
         } catch (error) {
             console.error("Error in ArchPush TO User ArchEngin:", error);
-            return ;
+            return;
         }
     }
 
@@ -300,7 +411,7 @@ export default class ArchForge {
     ): Promise<ProjectPlan> {
         try {
             const processId = processIdProvider();
-            this.pushToUser("🧠 Analyzing project and planning required changes...", projectId,userId,processId,"render");
+            this.pushToUser("🧠 Analyzing project and planning required changes...", projectId, userId, processId, "render");
             const optimizedContext = this.formatContextForPlanner(fileContexts);
 
             const systemPrompt = `
@@ -359,7 +470,7 @@ export default class ArchForge {
             // E. Parse & Validate
             const plan: ProjectPlan = JSON.parse(content);
             // todo Planner Done There Job
-            this.pushToUser("", projectId,userId,processId,"complete");
+            this.pushToUser("", projectId, userId, processId, "complete");
             return plan;
         } catch (error) {
             console.error(" ArchEngine Planner Error:", error);
@@ -383,13 +494,3 @@ export default class ArchForge {
     };
 
 }
-
-// //! Test case ( Unit Test )
-// ArchForge._process_({
-//     prompt: "Create A Amazon Clone",
-//     userId: new mongoose.Types.ObjectId("68cc11742daa63367d44b061"),
-//     projectId: new mongoose.Types.ObjectId("6926f4f4c1ae883c414eb5e5"),
-//     cursor_fileId: new mongoose.Types.ObjectId("6926f4f5c1ae883c414eb5f6")
-// })
-// // ! it Getting Exelerating
-// #endregion
