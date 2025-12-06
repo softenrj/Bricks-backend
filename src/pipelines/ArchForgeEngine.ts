@@ -5,7 +5,7 @@ import getVectorEmbedding from "../service/vectorTransformer.js";
 import { FileVector } from "../model/file_vectors.js";
 import { IProjectFile, ProjectFile } from "../model/project_files.js";
 import { buildAsciiTree } from "../service/treeNodeBuilder.js";
-import { AI_MODULE } from "../config/groqSdkConfig.js";
+import { AI_MODULE, Google_GenAI } from "../config/groqSdkConfig.js";
 import { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions.mjs";
 import { ArchEnginStatusSocket } from "../sockets/ArchEnginProcess.js";
 import { processIdProvider, uIdProvider } from "../service/user.uidProvider.js";
@@ -226,7 +226,7 @@ export default class ArchForge {
                     4. **Modifications**: If modifying an existing file, do not return a diff. Return the ENTIRE file content with the changes integrated.
                     5. **ShadCn UI**: If the path includes 'components/ui', treat it as a standard ShadCn component—do not modify logic unless explicitly requested.
                 `;
-                            
+
                 const userMessage = `
                     ### TASK REQUEST
                     **Action:** ${action} (Values: "create" | "modify")
@@ -257,14 +257,31 @@ export default class ArchForge {
                 ];
 
                 try {
-                    const completion = await AI_MODULE.chat.completions.create({
-                        model: "Llama-3.3-70B-Versatile",
-                        messages,
-                        temperature: 0.3,
-                        response_format: { type: "json_object" }
+                    // const completion = await AI_MODULE.chat.completions.create({
+                    //     model: "Llama-3.3-70B-Versatile",
+                    //     messages,
+                    //     temperature: 0.3,
+                    //     response_format: { type: "json_object" }
+                    // });
+
+                    const response = await Google_GenAI.models.generateContent({
+                        model: "gemini-2.5-flash",
+                        contents: [
+                            {
+                                role: "user",
+                                parts: [
+                                    { text: systemPrompt },
+                                    { text: userMessage },
+                                ],
+                            },
+                        ],
                     });
 
-                    const raw = completion.choices?.[0]?.message?.content || "{}";
+                    // const content = completion.choices[0]?.message?.content || "{}";
+                    const text = response?.text?.trim() || "";
+                    const raw = text.replace(/^(```[\w]*\n)|(\n```)$|(```)$/g, "").trim();
+
+                    // const raw = completion.choices?.[0]?.message?.content || "{}";
                     const generatedCode: ArchProjectCode = JSON.parse(raw);
 
                     await this.handleMissingImports(generatedCode, planedScript);
@@ -494,3 +511,4 @@ export default class ArchForge {
     };
 
 }
+
