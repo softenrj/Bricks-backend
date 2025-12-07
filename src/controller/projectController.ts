@@ -9,6 +9,10 @@ import { CodeCompletion } from "../service/bricksCodeCompletion.js";
 import { ProcessSocket } from "../sockets/socket.process.js";
 import { __projectDescription } from "../service/projectDescription.js";
 import { FullCodeCompletion } from "../service/fullCodeCompletion.js";
+import { pushProjectHistory, pushUserHistory } from "../service/BricksHistoryService.js";
+import { BrickHistoryTypeEnum } from "../model/BricksHistory.js";
+import { AchievementService } from "../service/Achievements.js";
+import { AchievementEnum } from "../model/achievements.js";
 
 /**
  * 
@@ -40,10 +44,12 @@ export const createNewProject = async (req: Request, res: Response): Promise<voi
             web_technology: web_tech,
             tech_language: tech_lan
         })
+        await pushUserHistory({ userId, description: `Created project "${project_name}" using ${web_tech} (${tech_lan}).`}, BrickHistoryTypeEnum.user)
 
         // initialize the projects
         if (project.id) await ProjectInitializer(project.id, userId, tech_lan);
-
+        await AchievementService(AchievementEnum.KBP, userId);
+        
         sendResponse(res, 201, { success: true, message: " Project is successfully Created ", data: project })
     } catch (error) {
         sendResponse(res, 500, { success: false, message: "Internal Server Error" })
@@ -265,6 +271,7 @@ export const markProjectDetete = async (req: Request, res: Response): Promise<vo
             userId, _id: projectId
         }, { markDelete: true }, { $upsert: true });
 
+        await pushUserHistory({ userId, description: `Deleted project "${project?.name || ""}" on ${new Date().toISOString()}.`}, BrickHistoryTypeEnum.user)
         sendResponse(res, 201, { success: true, message: "Project is Successfully Removed" });
     } catch (error) {
         console.error("Error un node Project:", error);
@@ -334,7 +341,7 @@ export const bricksCodeCompletion = async (req: Request, res: Response): Promise
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
     }
 }
-
+// TODO : Project Id from frontEnd
 export const bricksCodeImprovement = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -343,13 +350,14 @@ export const bricksCodeImprovement = async (req: Request, res: Response): Promis
             return;
         }
 
-        const { context, fileName, fileLanguage } = req.body;
+        const { context, fileName, fileLanguage, projectId } = req.body;
         ProcessSocket.pushStatus({
             message: "Generating Full code.. hang tight!",
             status: true
         },userId);
 
         const cleanCode = await FullCodeCompletion.getCodeCompletion(context, fileName, fileLanguage);
+        pushProjectHistory({ userId, projectId, description: `Improved code for file "${fileName}".`}, BrickHistoryTypeEnum.CodeCompletion)
         ProcessSocket.pushStatus({
             status: false,
             message: "Code is ready!"

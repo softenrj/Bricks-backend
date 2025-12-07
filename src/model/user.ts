@@ -9,6 +9,8 @@ export interface IUser extends Document {
     email: string;
     token: string;
     authType: string;
+    createAt: Date;
+    updatedAt: Date;
 }
 
 export enum AuthType {
@@ -25,6 +27,6 @@ const userSchema = new mongoose.Schema<IUser>({
     email: { type: String, required: true, unique: true },
     token: { type: String, required: true },
     authType: { type: String, enum: AuthType , required: true }
-})
+}, { timestamps: true })
 
 export default mongoose.model<IUser>("users", userSchema);

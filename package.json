@@ -46,6 +46,7 @@
     "mongoose": "^8.18.0",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
     "node-html-parser": "^7.0.1",
     "primelogger": "^1.0.1",
     "rimraf": "^6.0.1",

@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { Project } from "../model/project.js";
 import { sendResponse } from "../types/apiResponse.js";
+import { modifyProjectHistory, pushProjectHistory } from "../service/BricksHistoryService.js";
+import { BrickHistoryTypeEnum } from "../model/BricksHistory.js";
+import mongoose from "mongoose";
 
 
 
@@ -15,7 +18,7 @@ class ProjectStarHandler {
      */
     public static markStar = async (req: Request, res: Response): Promise<void> => {
         try {
-            const projectId: string = req.params.projectId;
+            const projectId = req.params.projectId;
             const userId = req.userId;
 
             if (!userId) {
@@ -33,6 +36,8 @@ class ProjectStarHandler {
                     starred: true
                 }
             })
+
+            pushProjectHistory({ userId, projectId: new mongoose.Types.ObjectId(projectId), description: `Project: ${project?.name} marked as starred.`}, BrickHistoryTypeEnum.project);
 
             sendResponse(res, 201, { success: true, data: project, message: "Project is Marked Starred" })
         } catch (error) {
@@ -68,6 +73,8 @@ class ProjectStarHandler {
                     starred: false
                 }
             })
+
+            modifyProjectHistory({ userId, projectId: new mongoose.Types.ObjectId(projectId), description: `Project: ${project?.name} marked as starred.`}, BrickHistoryTypeEnum.project);
 
             sendResponse(res, 201, { success: true, data: project, message: "Project is Marked Starred" })
         } catch (error) {

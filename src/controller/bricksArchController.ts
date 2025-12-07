@@ -1,6 +1,8 @@
 import { Request, Response } from "express"
 import { sendResponse } from "../types/apiResponse.js";
 import ArchForge from "../pipelines/ArchForgeEngine.js";
+import { pushProjectHistory } from "../service/BricksHistoryService.js";
+import { BrickHistoryTypeEnum } from "../model/BricksHistory.js";
 
 export const archForgeCodeGenBricks = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -19,6 +21,8 @@ export const archForgeCodeGenBricks = async (req: Request, res: Response): Promi
         await ArchForge._process_({
             userId, projectId, cursor_fileId, prompt
         })
+
+        pushProjectHistory({ userId, projectId, description: `Initiated ArchForge Code Generation with prompt: "${prompt.substring(0, 30)}..."`}, BrickHistoryTypeEnum.ArchForge)
         sendResponse(res, 200, { success: true, message: "Process is Running", data: [] });
     } catch (error) {
         console.error("Error ArchForge Controller:", error);

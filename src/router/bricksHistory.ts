@@ -1,0 +1,16 @@
+import { Router } from "express";
+import * as BricksHistoryController from "../controller/BricksHistory.js"
+import { isAuth } from "../middleware/auth.js";
+
+const router = Router();
+
+router.get('/user', isAuth, BricksHistoryController.getUserHistory)
+router.get('/project/:projectId', isAuth, BricksHistoryController.getProjectHistory)
+
+router.delete('/user/:historyId', isAuth, BricksHistoryController.removeUserHistory)
+router.delete('/user', isAuth, BricksHistoryController.cleanUserHistory)
+
+router.delete('project/:projectId', isAuth, BricksHistoryController.removeProjectHistory)
+router.delete('/project/:projectId', isAuth, BricksHistoryController.cleanProjectHistory)
+
+export const BricksHistoryRouter = router;

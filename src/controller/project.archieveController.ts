@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { Project } from "../model/project.js";
 import { sendResponse } from "../types/apiResponse.js";
+import { pushUserHistory } from "../service/BricksHistoryService.js";
+import { BrickHistoryTypeEnum } from "../model/BricksHistory.js";
 
 
 // Class Responsible for Project Archieve or UnArchieve //
@@ -31,6 +33,8 @@ class ProjectArchieveHandler {
                     archived: true
                 }
             })
+
+            pushUserHistory({ userId, description: `Project: ${project?.name} is moved to Archieve.`}, BrickHistoryTypeEnum.project);
 
             sendResponse(res, 201, { success: true, data: project, message: "Project is Now Archieve" })
         } catch (error) {
@@ -66,6 +70,8 @@ class ProjectArchieveHandler {
                     archived: false
                 }
             })
+
+            pushUserHistory({ userId, description: `Project: ${project?.name} is removed from Archieve.`}, BrickHistoryTypeEnum.project);
 
             sendResponse(res, 201, { success: true, data: project, message: "Project is now UnArchieve" })
         } catch (error) {

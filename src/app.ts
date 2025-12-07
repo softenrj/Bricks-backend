@@ -13,6 +13,7 @@ import { router } from "./router.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import mongoServer from "./config/mongoConfig.js";
 import { env } from "./config/env.js";
+import "./scheduler/index.js"
 
 const app = express();
 env

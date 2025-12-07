@@ -6,6 +6,8 @@ import { AI_MODULE } from "../config/groqSdkConfig.js";
 import { FileVector } from "../model/file_vectors.js";
 import getVectorEmbedding from "./vectorTransformer.js";
 import mongoose from "mongoose";
+import { pushProjectHistory } from "./BricksHistoryService.js";
+import { BrickHistoryTypeEnum } from "../model/BricksHistory.js";
 
 export const MAX_MESSAGE_LENGTH = 2000;
 export const HISTORY_LIMIT = 3;
@@ -59,6 +61,7 @@ export class BRICKS_AI_ENGINE {
         try {
             const chatName = await this._generateDynamicChatName(prompt);
             const chat = await BricksChat.create({ userId, projectId, name: chatName });
+            pushProjectHistory({ userId, projectId: new mongoose.Types.ObjectId(projectId), description: `Started Brick Chat "${chatName}".`}, BrickHistoryTypeEnum.BrickChat)
             return chat || null;
         } catch (error) {
             console.error("Error while initializing chat:", error);
