@@ -99,7 +99,6 @@ export const projectSocket = (socket: Socket) => {
     const userId = socket.data.userId;
     try {
       const result = await ProjectFile.deleteOne({ path, name, userId, projectId });
-      console.log(path, name, result)
       pushProjectHistory({ userId, projectId: new mongoose.Types.ObjectId(projectId), description: `Removed file "${name}" at path "${path}".`}, BrickHistoryTypeEnum.project);
       socket.emit("file:remove:ack", { path, name, success: result.deletedCount > 0 });
     } catch (err) {

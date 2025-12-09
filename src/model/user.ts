@@ -4,6 +4,8 @@ export interface IUser extends Document {
     _id: mongoose.Types.ObjectId;
     uid: string;
     profile: string;
+    bio: string;
+    penname: string;
     firebaseId: string;
     username: string;
     email: string;
@@ -21,12 +23,14 @@ export enum AuthType {
 
 const userSchema = new mongoose.Schema<IUser>({
     username: { type: String },
+    penname: { type: String, default: 'bricks-user' },
     uid: { type: String, required: true, unique: true },
-    profile: { type: String },
+    bio: { type: String, default: 'Hello! I am a proud bricks user.' },
+    profile: { type: String, default: "https://res.cloudinary.com/dcyn3ewpv/image/upload/v1765213398/149652817_fyg25e.jpg" },
     firebaseId: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     token: { type: String, required: true },
-    authType: { type: String, enum: AuthType , required: true }
+    authType: { type: String, enum: AuthType, required: true }
 }, { timestamps: true })
 
 export default mongoose.model<IUser>("users", userSchema);

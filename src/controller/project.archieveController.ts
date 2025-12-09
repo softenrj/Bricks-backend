@@ -3,6 +3,9 @@ import { Project } from "../model/project.js";
 import { sendResponse } from "../types/apiResponse.js";
 import { pushUserHistory } from "../service/BricksHistoryService.js";
 import { BrickHistoryTypeEnum } from "../model/BricksHistory.js";
+import { archivedStats } from "../service/UserStatsService.js";
+import { AchievementService } from "../service/Achievements.js";
+import { AchievementEnum } from "../model/achievements.js";
 
 
 // Class Responsible for Project Archieve or UnArchieve //
@@ -33,6 +36,9 @@ class ProjectArchieveHandler {
                     archived: true
                 }
             })
+
+            await archivedStats(1, userId);
+            await AchievementService(AchievementEnum.LU, userId);
 
             pushUserHistory({ userId, description: `Project: ${project?.name} is moved to Archieve.`}, BrickHistoryTypeEnum.project);
 
@@ -70,6 +76,8 @@ class ProjectArchieveHandler {
                     archived: false
                 }
             })
+
+            await archivedStats(0, userId);
 
             pushUserHistory({ userId, description: `Project: ${project?.name} is removed from Archieve.`}, BrickHistoryTypeEnum.project);
 

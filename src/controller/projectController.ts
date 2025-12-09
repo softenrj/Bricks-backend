@@ -13,6 +13,7 @@ import { pushProjectHistory, pushUserHistory } from "../service/BricksHistorySer
 import { BrickHistoryTypeEnum } from "../model/BricksHistory.js";
 import { AchievementService } from "../service/Achievements.js";
 import { AchievementEnum } from "../model/achievements.js";
+import { projectStats } from "../service/UserStatsService.js";
 
 /**
  * 
@@ -49,6 +50,7 @@ export const createNewProject = async (req: Request, res: Response): Promise<voi
         // initialize the projects
         if (project.id) await ProjectInitializer(project.id, userId, tech_lan);
         await AchievementService(AchievementEnum.KBP, userId);
+        await projectStats(1, userId);
         
         sendResponse(res, 201, { success: true, message: " Project is successfully Created ", data: project })
     } catch (error) {
@@ -270,6 +272,8 @@ export const markProjectDetete = async (req: Request, res: Response): Promise<vo
         const project = await Project.findOneAndUpdate({
             userId, _id: projectId
         }, { markDelete: true }, { $upsert: true });
+
+        await projectStats(0, userId);
 
         await pushUserHistory({ userId, description: `Deleted project "${project?.name || ""}" on ${new Date().toISOString()}.`}, BrickHistoryTypeEnum.user)
         sendResponse(res, 201, { success: true, message: "Project is Successfully Removed" });

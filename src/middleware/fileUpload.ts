@@ -4,22 +4,35 @@ import { NextFunction, Request, Response } from 'express';
 
 const storage = multer.memoryStorage();
 
-const FileFilter = ( req: Request, file: Express.Multer.File , cb: multer.FileFilterCallback ) => {
-    if( file.mimetype.startsWith("image")) {
-        cb(null, true);
-    } else [
-        cb(new Error(" you can only Upload Images "))
-    ]
-    
+interface CloudinaryImage {
+  url: string;
+  public_id: string;
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      cloudinaryImage: CloudinaryImage
+    }
+  }
+}
+
+const FileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("You can only upload images"));
+  }
+
 }
 
 export const upLoad = multer({
-    storage: storage,
-    fileFilter: FileFilter,
-    limits: {
-       fileSize: 32 * 1024 * 1024
-    }
-})
+  storage: storage,
+  fileFilter: FileFilter,
+  limits: {
+    fileSize: 32 * 1024 * 1024
+  }
+}).single("image");
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
@@ -34,7 +47,7 @@ export const uploadToCloudnary = async (
 ): Promise<void> => {
   try {
     if (!req.file) {
-      res.status(400).json({ success: false, message: "No file uploaded" });
+      next();
       return;
     }
 
@@ -46,7 +59,7 @@ export const uploadToCloudnary = async (
           return;
         }
 
-        (req as any).cloudinaryImage = {
+        req.cloudinaryImage = {
           url: result.secure_url,
           public_id: result.public_id,
         };

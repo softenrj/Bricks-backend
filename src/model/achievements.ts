@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
 export enum AchievementEnum {
     KBP = "Knight's Blueprint",
@@ -13,7 +13,7 @@ export enum AchievementEnum {
     SH = "Shield Hero"
 }
 
-export interface IAchievement {
+export interface IAchievement extends Document {
     name: string;
     badge: string;
     description: string;

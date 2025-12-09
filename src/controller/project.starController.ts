@@ -4,6 +4,7 @@ import { sendResponse } from "../types/apiResponse.js";
 import { modifyProjectHistory, pushProjectHistory } from "../service/BricksHistoryService.js";
 import { BrickHistoryTypeEnum } from "../model/BricksHistory.js";
 import mongoose from "mongoose";
+import { starStats } from "../service/UserStatsService.js";
 
 
 
@@ -36,6 +37,8 @@ class ProjectStarHandler {
                     starred: true
                 }
             })
+
+            await starStats(1, userId);
 
             pushProjectHistory({ userId, projectId: new mongoose.Types.ObjectId(projectId), description: `Project: ${project?.name} marked as starred.`}, BrickHistoryTypeEnum.project);
 
@@ -73,6 +76,8 @@ class ProjectStarHandler {
                     starred: false
                 }
             })
+
+            await starStats(0, userId);
 
             modifyProjectHistory({ userId, projectId: new mongoose.Types.ObjectId(projectId), description: `Project: ${project?.name} marked as starred.`}, BrickHistoryTypeEnum.project);
 

@@ -106,7 +106,6 @@ export const projectBricksChat = async (req: Request, res: Response): Promise<vo
     const userId = req.userId;
     const projectId = req.params.projectId;
     const { chatId, prompt, stream = false } = req.body;
-    console.log(req.body)
     if (!userId) {
       sendResponse(res, 401, { success: false, message: "Unauthorized" });
       return;
@@ -122,7 +121,6 @@ export const projectBricksChat = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    console.log("stream: --------",stream)
     if (stream) {
       await BRICKSCHATSSE_SERVICE.processChat(req,res);
       return ;

@@ -36,7 +36,6 @@ export class BRICKSCHATSSE_SERVICE {
         let clientDisconnected = false;
         req.on("close", () => {
             clientDisconnected = true;
-            console.log("Client disconnected, aborting stream...");
             res.end();
         });
 
@@ -143,7 +142,6 @@ export class BRICKSCHATSSE_SERVICE {
 
             try {
                 for await (const chunk of aiStream) {
-                    console.log(chunk.choices[0]?.delta?.content, " -------- New Line ------")
                     if (clientDisconnected) break;
 
                     const delta = chunk?.choices?.[0]?.delta?.content;

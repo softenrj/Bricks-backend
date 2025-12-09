@@ -11,8 +11,15 @@ export interface IBricksHistry extends Document {
 }
 
 export enum BrickHistoryTypeEnum {
-    "ArchForge" , " FileSystem" , "CodeCompletion" , "BrickChat", "unknown", "user", "project"
+  ArchForge = "ArchForge",
+  FileSystem = "FileSystem",
+  CodeCompletion = "CodeCompletion",
+  BrickChat = "BrickChat",
+  unknown = "unknown",
+  user = "user",
+  project = "project",
 }
+
 
 //? i not include index as { nope nevermind !}
 const bricksHistorySchema = new mongoose.Schema<IBricksHistry>({

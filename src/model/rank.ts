@@ -1,7 +1,8 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
-export interface IRank {
+export interface IRank extends Document {
   name: string;
+  rank: string;
   description: string;
   badge: string;
   minReputation: number;
@@ -10,6 +11,7 @@ export interface IRank {
 
 const rankSchema = new Schema<IRank>({
   name: { type: String, required: true, unique: true, trim: true },
+  rank: { type: String, required: true, unique: true, trim: true },
   description: { type: String, required: true },
   badge: { type: String, required: true },
   minReputation: { type: Number, required: true },

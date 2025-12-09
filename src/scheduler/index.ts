@@ -3,7 +3,7 @@ import AllJobs from "./jobs/index.js"
 import { logger } from "../config/loggerConfig.js";
 
 logger.color('gray',"\n🏰 The Forge of Time awakens...");
-logger.color('red',"_______________________________________________");
+logger.color('red',"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 AllJobs.forEach(job => {
   if (!job.enabled) return;
@@ -16,8 +16,8 @@ AllJobs.forEach(job => {
     }
   });
 
-  logger.color('yellow',`⚙️ Quest forged: ${job.name}  ⏱ ${job.schedule}`);
+  logger.color('yellow',`⚙️  Quest forged: ${job.name} ⏰ ${job.schedule}`);
 });
 
-logger.color('red',"_______________________________________________");
+logger.color('red',"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 logger.color('gray',"🔥 All quests are now running under the seal of midnight.\n");

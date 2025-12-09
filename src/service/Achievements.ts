@@ -3,6 +3,7 @@ import { Achievement, AchievementEnum } from "../model/achievements.js";
 import { UserStats } from "../model/userStats.js";
 import { ensureUserStats } from "./UserStatsService.js";
 
+
 export async function AchievementService(
     type: AchievementEnum,
     userId: mongoose.Types.ObjectId
@@ -11,22 +12,20 @@ export async function AchievementService(
         const ach = await Achievement.findOne({ name: type });
         if (!ach) return;
 
-        await ensureUserStats(userId);
-        
-        const result = await UserStats.updateOne(
+        const stats = await ensureUserStats(userId);
+
+        const REPUTATION_CAP = 100;
+        const REPUTATION_INCREASE = 5;
+        const rep = Math.min(REPUTATION_CAP, stats.reputation + REPUTATION_INCREASE)
+
+        await UserStats.updateOne(
             { userId },
-            { $addToSet: { achievements: ach._id } }
+            {
+                $set: { reputation: rep },
+                $addToSet: { achievements: ach._id }
+            }
         );
 
-        if (result.modifiedCount > 0) {
-            await UserStats.updateOne(
-                { userId },
-                {
-                    $inc: { reputation: 5 },
-                    $min: { reputation: 100 }
-                }
-            );
-        }
 
     } catch (error) {
         console.error("AchievementService Error:", error);
