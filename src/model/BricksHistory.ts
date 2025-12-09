@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export interface IBricksHistry extends Document {
+export interface IBricksHistry {
     _id: mongoose.Types.ObjectId;
     userId: mongoose.Types.ObjectId;
     projectId?: mongoose.Types.ObjectId;

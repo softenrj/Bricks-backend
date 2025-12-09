@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export interface IUserStats extends Document {
+export interface IUserStats {
     userId: mongoose.Types.ObjectId;
     projects: number;
     archived: number;

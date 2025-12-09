@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export interface IRank extends Document {
+export interface IRank {
   name: string;
   rank: string;
   description: string;

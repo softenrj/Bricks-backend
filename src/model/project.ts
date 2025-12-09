@@ -10,7 +10,7 @@ export enum TechLanguage {
   TS = "TS"
 }
 
-export interface IProject extends Document {
+export interface IProject {
   userId: mongoose.Types.ObjectId;
   name: string;
   description: string;

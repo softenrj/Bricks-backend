@@ -13,7 +13,7 @@ export enum AchievementEnum {
     SH = "Shield Hero"
 }
 
-export interface IAchievement extends Document {
+export interface IAchievement {
     name: string;
     badge: string;
     description: string;
