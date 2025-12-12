@@ -6,7 +6,7 @@ export interface IBricksHistry {
     projectId?: mongoose.Types.ObjectId;
     type: string;
     description: string;
-    createAt: Date;
+    createdAt: Date;
     updatedAt: Date;
 }
 
@@ -18,6 +18,8 @@ export enum BrickHistoryTypeEnum {
   unknown = "unknown",
   user = "user",
   project = "project",
+  Achievement = "Achievement",
+  Rank = "RankChange"
 }
 
 

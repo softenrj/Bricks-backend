@@ -7,6 +7,9 @@ const router = Router();
 router.get('/user', isAuth, BricksHistoryController.getUserHistory)
 router.get('/project/:projectId', isAuth, BricksHistoryController.getProjectHistory)
 
+router.get('/user-all', isAuth, BricksHistoryController.getAllUserHistory)
+router.get('project-all/:projectId', isAuth, BricksHistoryController.getAllProjectHistory)
+
 router.delete('/user/:historyId', isAuth, BricksHistoryController.removeUserHistory)
 router.delete('/user', isAuth, BricksHistoryController.cleanUserHistory)
 
