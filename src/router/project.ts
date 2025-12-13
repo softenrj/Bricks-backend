@@ -26,5 +26,7 @@ router.get('/bricks-project-files/:projectId', isAuth, projectController.project
 router.post('/bricks-code-sugg', isAuth, projectController.bricksCodeCompletion)
 router.post('/bricks-code-improvement', isAuth, projectController.bricksCodeImprovement)
 
+router.get('/project-code-lense/:projectId', isAuth, projectController.getProjectCodeLense)
+
 
 export const projectRouter = router;

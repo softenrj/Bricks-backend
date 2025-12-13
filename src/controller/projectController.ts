@@ -14,6 +14,7 @@ import { BrickHistoryTypeEnum } from "../model/BricksHistory.js";
 import { AchievementService } from "../service/Achievements.js";
 import { AchievementEnum } from "../model/achievements.js";
 import { projectStats } from "../service/UserStatsService.js";
+import { CodeLense, getProjectCodeLenseService } from "../service/CodeLense.js";
 
 /**
  * 
@@ -372,3 +373,36 @@ export const bricksCodeImprovement = async (req: Request, res: Response): Promis
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
     }
 }
+
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
+export const getProjectCodeLense = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.userId;
+        const projectId = req.params.projectId;
+
+        if (!userId) {
+            sendResponse(res, 401, { success: false, message: "Unauthorized" });
+            return;
+        }
+
+        const projectFile = (await ProjectFile.find({ projectId, userId }).lean()) as unknown as IProjectFile[];
+
+        const treeNode: TreeNode = buildTree(projectFile);
+
+        const CodeLense: CodeLense = getProjectCodeLenseService(treeNode);
+
+        sendResponse(res, 200, {
+            success: true,
+            message: "Projects Code Lense fetched successfully",
+            data: CodeLense
+        });
+    } catch (error) {
+        console.error("Error getting projects Code lense:", error);
+        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    }
+};

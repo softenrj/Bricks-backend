@@ -8,12 +8,12 @@ router.get('/user', isAuth, BricksHistoryController.getUserHistory)
 router.get('/project/:projectId', isAuth, BricksHistoryController.getProjectHistory)
 
 router.get('/user-all', isAuth, BricksHistoryController.getAllUserHistory)
-router.get('project-all/:projectId', isAuth, BricksHistoryController.getAllProjectHistory)
+router.get('/project-all/:projectId', isAuth, BricksHistoryController.getAllProjectHistory)
 
 router.delete('/user/:historyId', isAuth, BricksHistoryController.removeUserHistory)
 router.delete('/user', isAuth, BricksHistoryController.cleanUserHistory)
 
-router.delete('project/:projectId', isAuth, BricksHistoryController.removeProjectHistory)
-router.delete('/project/:projectId', isAuth, BricksHistoryController.cleanProjectHistory)
+router.delete('/project/:historyId', isAuth, BricksHistoryController.removeProjectHistory)
+router.delete('/project-all/:projectId', isAuth, BricksHistoryController.cleanProjectHistory)
 
 export const BricksHistoryRouter = router;

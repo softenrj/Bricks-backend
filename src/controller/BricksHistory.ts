@@ -170,7 +170,7 @@ export const getProjectHistory = async (req: Request, res: Response): Promise<vo
             return;
         }
 
-        const { lastCreatedAt, limit = 10, q } = req.query;
+        const { lastCreatedAt, limit = 10, q, sort } = req.query;
         const {projectId} = req.params;
 
         if (!projectId) {
@@ -187,13 +187,18 @@ export const getProjectHistory = async (req: Request, res: Response): Promise<vo
             query.description = { $regex: q as string, $options: "i" }
         }
 
+        let sort_filter: 1 | -1 = -1;
+        if (sort) {
+            sort_filter = sort === "asc" ? 1 : -1;
+        }
+
         if (lastCreatedAt) {
             const date = new Date(lastCreatedAt as any);
             if (!isNaN(date.getTime())) {
                 query.createdAt = { $lt: date }
             }
         }
-        const history = await BricksHistory.find(query).sort({ createdAt: -1 }).limit(Number(limit) + 1);
+        const history = await BricksHistory.find(query).sort({ createdAt: sort_filter }).limit(Number(limit) + 1);
 
         const hasNextPage = history.length > Number(limit);
         const data = hasNextPage ? history.slice(0,-1) : history;
