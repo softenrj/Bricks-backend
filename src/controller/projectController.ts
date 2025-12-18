@@ -15,6 +15,8 @@ import { AchievementService } from "../service/Achievements.js";
 import { AchievementEnum } from "../model/achievements.js";
 import { projectStats } from "../service/UserStatsService.js";
 import { CodeLense, getProjectCodeLenseService } from "../service/CodeLense.js";
+import { DependencyInfo, getDependencyList } from "../service/Dependency.js";
+import mongoose from "mongoose";
 
 /**
  * 
@@ -46,13 +48,13 @@ export const createNewProject = async (req: Request, res: Response): Promise<voi
             web_technology: web_tech,
             tech_language: tech_lan
         })
-        await pushUserHistory({ userId, description: `Created project "${project_name}" using ${web_tech} (${tech_lan}).`}, BrickHistoryTypeEnum.user)
+        await pushUserHistory({ userId, description: `Created project "${project_name}" using ${web_tech} (${tech_lan}).` }, BrickHistoryTypeEnum.user)
 
         // initialize the projects
         if (project.id) await ProjectInitializer(project.id, userId, tech_lan);
         await AchievementService(AchievementEnum.KBP, userId);
         await projectStats(1, userId);
-        
+
         sendResponse(res, 201, { success: true, message: " Project is successfully Created ", data: project })
     } catch (error) {
         sendResponse(res, 500, { success: false, message: "Internal Server Error" })
@@ -276,7 +278,7 @@ export const markProjectDetete = async (req: Request, res: Response): Promise<vo
 
         await projectStats(0, userId);
 
-        await pushUserHistory({ userId, description: `Deleted project "${project?.name || ""}" on ${new Date().toISOString()}.`}, BrickHistoryTypeEnum.user)
+        await pushUserHistory({ userId, description: `Deleted project "${project?.name || ""}" on ${new Date().toISOString()}.` }, BrickHistoryTypeEnum.user)
         sendResponse(res, 201, { success: true, message: "Project is Successfully Removed" });
     } catch (error) {
         console.error("Error un node Project:", error);
@@ -346,7 +348,7 @@ export const bricksCodeCompletion = async (req: Request, res: Response): Promise
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
     }
 }
-// TODO : Project Id from frontEnd
+
 export const bricksCodeImprovement = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -359,10 +361,10 @@ export const bricksCodeImprovement = async (req: Request, res: Response): Promis
         ProcessSocket.pushStatus({
             message: "Generating Full code.. hang tight!",
             status: true
-        },userId);
+        }, userId);
 
         const cleanCode = await FullCodeCompletion.getCodeCompletion(context, fileName, fileLanguage);
-        pushProjectHistory({ userId, projectId, description: `Improved code for file "${fileName}".`}, BrickHistoryTypeEnum.CodeCompletion)
+        pushProjectHistory({ userId, projectId, description: `Improved code for file "${fileName}".` }, BrickHistoryTypeEnum.CodeCompletion)
         ProcessSocket.pushStatus({
             status: false,
             message: "Code is ready!"
@@ -390,6 +392,11 @@ export const getProjectCodeLense = async (req: Request, res: Response): Promise<
             return;
         }
 
+        if (!projectId) {
+            sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
+            return;
+        }
+
         const projectFile = (await ProjectFile.find({ projectId, userId }).lean()) as unknown as IProjectFile[];
 
         const treeNode: TreeNode = buildTree(projectFile);
@@ -406,3 +413,103 @@ export const getProjectCodeLense = async (req: Request, res: Response): Promise<
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
     }
 };
+
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
+export const getProjectDependency = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.userId;
+        const projectId = req.params.projectId;
+
+        if (!userId) {
+            sendResponse(res, 401, { success: false, message: "Unauthorized" });
+            return;
+        }
+
+        if (!projectId) {
+            sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
+            return;
+        }
+
+        const depInfo: DependencyInfo[] = await getDependencyList(projectId, userId);
+
+        sendResponse(res, 200, { message: "successfully fetched Project Dependency List", success: true, data: depInfo })
+    } catch (error) {
+        console.error("Error getting projects Code lense:", error);
+        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    }
+}
+
+
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @returns 
+ */
+export const getProjectDoc = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.userId;
+        const projectId = req.params.projectId;
+
+        if (!userId) {
+            sendResponse(res, 401, { success: false, message: "Unauthorized" });
+            return;
+        }
+
+        if (!projectId) {
+            sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
+            return;
+        }
+        const docs = await ProjectFile.aggregate([
+            {
+                $match: {
+                    projectId: new mongoose.Types.ObjectId(projectId),
+                    userId,
+                    name: {
+                        $in: [
+                            "README.md",
+                            "LICENSE",
+                            "CODE_OF_CONDUCT.md",
+                            "CONTRIBUTING.md", 
+                            "Dockerfile", 
+                            "docker-compose.yml",
+                            "SECURITY.md",
+                            "CHANGELOG.md",
+                            "LICENCE.md"
+                        ]
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    files: {
+                        $push: {
+                            k: {
+                                $toLower: {
+                                    $arrayElemAt: [{ $split: ["$name", "."] }, 0]
+                                }
+                            },
+                            v: "$content" 
+                        }
+                    }
+                }
+            },
+            {
+                $replaceRoot: {
+                    newRoot: { $arrayToObject: "$files" }
+                }
+            }
+        ]);
+
+        sendResponse(res, 200, { success: true, message: "successfully fetched Doc ", data: docs });
+    } catch (error) {
+        console.error("Error getting projects Code lense:", error);
+        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    }
+}
