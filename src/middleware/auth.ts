@@ -3,11 +3,14 @@ import catchAsyncErrors from "./catchAsyncErrors.js";
 import mongoose from "mongoose";
 import User from "../model/user.js";
 import admin from "../config/firebaseAdmin.js";
+import jwt from "jsonwebtoken";
+const JWT_PRIVATE_KEY = process.env.JWT_PRIVATE_KEY!.replace(/\\n/g, "\n");
 
 declare global {
   namespace Express {
     interface Request {
       userId?: mongoose.Types.ObjectId;
+      user: any;
     }
   }
 }
@@ -41,6 +44,31 @@ class AuthMiddleware {
     }
   });
 }
+
+export const requireAdmin = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "No token" });
+        }
+
+        const payload = jwt.verify(token, JWT_PRIVATE_KEY) as any;
+
+        if (payload.role !== "admin") {
+            return res.status(403).json({ message: "Admin only" });
+        }
+
+        req.user = payload;
+        next();
+    } catch {
+        return res.status(401).json({ message: "Invalid token" });
+    }
+};
+
 
 export default AuthMiddleware;
 export const isAuth = AuthMiddleware.isAuthenticated;
