@@ -12,6 +12,7 @@ export interface IComment {
     parentId?: mongoose.Types.ObjectId | null;
     type: BType;
     typeId: mongoose.Types.ObjectId;
+    profile: string;
     isDeleted: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -23,6 +24,7 @@ const CommentSchema = new mongoose.Schema<IComment>(
     content: { type: String, required: true, trim: true, maxlength: 1000 },
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: "Comment", default: null, index: true },
     type: { type: String, enum: Object.values(BType), required: true, index: true },
+    profile: { type: String, required: false },
     typeId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
     isDeleted: { type: Boolean, default: false, index: true },
   },
@@ -37,4 +39,4 @@ CommentSchema.index({
 });
 
 export default mongoose.models.Comment ||
-  mongoose.model<IComment>("Comment", CommentSchema);
+  mongoose.model<IComment>("comments", CommentSchema);

@@ -11,10 +11,11 @@ export interface IEvent {
     _id: mongoose.Types.ObjectId;
     name: string;
     description: string;
-    status: 'upcoming' | 'live' | 'expire'
     thumbnail: string; 
     audio?: string;
     effect?: EffectEnum;
+    liveAt: Date;
+    expireAt: Date;
     liked: number;
     updatedAt: Date;
     createdAt: Date;
@@ -24,7 +25,8 @@ const EventSchema = new mongoose.Schema<IEvent>(
   {
     name: { type: String, required: true },
     description: { type: String },
-    status: { type: String, required: true, default: 'live'},
+    liveAt: { type: Date, required: false },
+    expireAt: { type: Date, required: true },
     thumbnail: { type: String, required: true },
     audio: { type: String },
     liked: { type: Number, default: 0 },
