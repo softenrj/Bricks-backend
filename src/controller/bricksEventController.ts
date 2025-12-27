@@ -65,12 +65,7 @@ export const getEvents = async (req: Request, res: Response): Promise<void> => {
 
     const { lastCreatedAt, limit = 10, sort } = req.query;
 
-    const now = new Date();
-
-    const query: Record<string, any> = {
-      liveAt: { $lte: now },
-      expireAt: { $gt: now }
-    };
+    const query: Record<string, any> = {};
 
     let sort_filter: 1 | -1 = -1;
     if (sort) {
