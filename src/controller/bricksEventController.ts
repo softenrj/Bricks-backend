@@ -6,7 +6,7 @@ import comments, { BType } from "../model/comments.js";
 import mongoose from "mongoose";
 
 export const createNewEvent = async (
-  req: Request, 
+  req: Request,
   res: Response
 ): Promise<void> => {
   try {
@@ -15,7 +15,7 @@ export const createNewEvent = async (
     if (!name || !liveAt || !expireAt) {
       sendResponse(res, 400, {
         success: false,
-        message: "Name, Live Date, and Expiry Date are required", 
+        message: "Name, Live Date, and Expiry Date are required",
       });
       return;
     }
@@ -24,14 +24,14 @@ export const createNewEvent = async (
     const end = new Date(expireAt);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-       sendResponse(res, 400, { success: false, message: "Invalid Date format" });
-       return;
+      sendResponse(res, 400, { success: false, message: "Invalid Date format" });
+      return;
     }
 
     if (end <= start) {
-      sendResponse(res, 400, { 
-        success: false, 
-        message: "Expire date must be after the Live date" 
+      sendResponse(res, 400, {
+        success: false,
+        message: "Expire date must be after the Live date"
       });
       return;
     }
@@ -65,7 +65,12 @@ export const getEvents = async (req: Request, res: Response): Promise<void> => {
 
     const { lastCreatedAt, limit = 10, sort } = req.query;
 
-    const query: Record<string, any> = {};
+    const now = new Date();
+
+    const query: Record<string, any> = {
+      liveAt: { $lte: now },
+      expireAt: { $gt: now }
+    };
 
     let sort_filter: 1 | -1 = -1;
     if (sort) {
@@ -81,7 +86,7 @@ export const getEvents = async (req: Request, res: Response): Promise<void> => {
 
     const bricksEvent = await BricksEvent.aggregate([
       { $match: query },
-      { $sort: { createdAt: sort_filter } },
+      { $sort: { liveAt: sort_filter } },
       { $limit: Number(limit) + 1 },
       {
         $lookup: {
