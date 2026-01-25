@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 export enum EffectEnum {
     CHRISTMAS = "christmas",
     NEW_YEAR = "new_year",
+    REPUBLIC_DAY = "republic_day",
     DIWALI = "diwali",
     NONE = "none"
 }
