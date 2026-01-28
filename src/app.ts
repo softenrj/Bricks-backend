@@ -14,6 +14,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import mongoServer from "./config/mongoConfig.js";
 import { env } from "./config/env.js";
 import "./scheduler/index.js"
+import cookieParser from 'cookie-parser';
 
 const app = express();
 env
@@ -34,9 +35,10 @@ mongoServer();
 // Rate limiting
 app.use(rateLimiter);
 
-// Parse incoming requests
+// Parse incoming requests and cookie
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 // :::: ROUTER ::::
 router(app);

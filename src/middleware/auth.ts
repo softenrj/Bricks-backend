@@ -17,8 +17,12 @@ declare global {
 
 class AuthMiddleware {
   private static extractToken(req: Request): string | null {
-    if (req.headers.authorization?.startsWith("Bearer ")) {
-      return req.headers.authorization.split(" ")[1];
+    // if (req.headers.authorization?.startsWith("Bearer ")) {
+    //   return req.headers.authorization.split(" ")[1];
+    // }
+
+    if (req.cookies.token) {
+      return req.cookies.token;
     }
     return null;
   }
