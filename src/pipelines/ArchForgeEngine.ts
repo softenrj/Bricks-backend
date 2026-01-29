@@ -11,6 +11,9 @@ import { ArchEnginStatusSocket } from "../sockets/ArchEnginProcess.js";
 import { processIdProvider, uIdProvider } from "../service/user.uidProvider.js";
 import { archSSEmanager } from "../serversideevents/ArchSSEManager.js";
 import { codeGenPrompt, folderStructurePrompt } from "./ArchPrompts.js";
+import { Snapshot, snapshotEnum } from "../model/snapshot.js";
+import { snapShotFile } from "../model/snapshotfile.js";
+import { uploadFiles } from "../middleware/fileUpload.js";
 
 interface Process {
     prompt: string;
@@ -46,10 +49,15 @@ type ProjectPlan = {
 };
 
 export interface ArchProjectCode {
-    fileName: string;
     path: string;
     content: string;
     dependency?: string;
+}
+
+interface snaps {
+    path: string;
+    content: string | null;
+    action: string;
 }
 export default class ArchForge {
 
@@ -169,6 +177,9 @@ export default class ArchForge {
                 .map(([path, info]) => `- ${path}: role=${info.role}`)
                 .join("\n");
 
+            const parentFiles: snaps[] = [];
+            const enrichedFiles: snaps[] = [];
+
             for (let i = 0; i < planKeys.length; i++) {
                 const filePath = planKeys[i];
                 const info = planedScript[filePath];
@@ -181,9 +192,8 @@ export default class ArchForge {
                 if (action === "modify") {
                     fileCode = await this.fileCodeProvider(filePath, projectId);
                 }
-                const otherFilesContext = Object.entries(planedScript)
-                    .map(([path, info]) => `- ${path}: ${info.responsibilities}`)
-                    .join("\n");
+                parentFiles.push({ path: filePath, content: fileCode, action: action });
+
 
                 this.pushToUser(
                     `🛠️ ${action === "create" ? "Creating" : "Modifying"}: ${filePath} • ${info.responsibilities}`,
@@ -241,27 +251,27 @@ export default class ArchForge {
                                     ` : ""}
 
                                     ========================
-UI DESIGN FREEDOM (TASK-SPECIFIC)
-========================
-This file is a USER-FACING UI component.
-
-You are FREE and ENCOURAGED to use your full creativity to design
-a visually outstanding, modern, clean, and professional UI.
-
-You MAY creatively decide:
-- Layout and spacing
-- Typography hierarchy
-- Color palette and gradients
-- Visual emphasis and depth
-- Subtle animations and micro-interactions
-- Hover and focus states
-
-The UI should feel like a real product, not tutorial code.
-
-BOUNDARIES:
-- Do NOT add new features, logic, or flows beyond the responsibilities.
-- Do NOT violate constraints.
-- Any state or animation must exist ONLY to improve UI/UX.
+                                    UI DESIGN FREEDOM (TASK-SPECIFIC)
+                                    ========================
+                                    This file is a USER-FACING UI component.
+                                                
+                                    You are FREE and ENCOURAGED to use your full creativity to design
+                                    a visually outstanding, modern, clean, and professional UI.
+                                                
+                                    You MAY creatively decide:
+                                    - Layout and spacing
+                                    - Typography hierarchy
+                                    - Color palette and gradients
+                                    - Visual emphasis and depth
+                                    - Subtle animations and micro-interactions
+                                    - Hover and focus states
+                                                
+                                    The UI should feel like a real product, not tutorial code.
+                                                
+                                    BOUNDARIES:
+                                    - Do NOT add new features, logic, or flows beyond the responsibilities.
+                                    - Do NOT violate constraints.
+                                    - Any state or animation must exist ONLY to improve UI/UX.
 
 
                                     ========================
@@ -365,6 +375,8 @@ BOUNDARIES:
                         projectId
                     });
 
+                    enrichedFiles.push({ path: generatedCode.path, content: generatedCode.content, action });
+
                 } catch (error) {
                     console.error("Error:", error);
                 } finally {
@@ -377,10 +389,70 @@ BOUNDARIES:
                     );
                 }
             }
+
+            const snapprocess = processIdProvider()
+            this.pushToUser(
+                `🛠️ snapshot is ready`,
+                projectId,
+                userId,
+                snapprocess,
+                "complete"
+            );
+
+            const snapshotv1Id = await this.snapshot(snapshotEnum.ACTIVE, userId, projectId, parentFiles, null);
+            const snapshotv2Id = await this.snapshot(snapshotEnum.DRAFT, userId, projectId, enrichedFiles, snapshotv1Id);
+            this.pushToUser(
+                `🛠️ snapshot is ready`,
+                projectId,
+                userId,
+                snapprocess,
+                "complete"
+            );
+
         } catch (error) {
             console.error("ArchCodeGenerator Failed:", error);
         }
     }
+
+
+    private static async snapshot(
+        state: snapshotEnum,
+        userId: mongoose.Types.ObjectId,
+        projectId: mongoose.Types.ObjectId,
+        files: snaps[],
+        parentSnapshotId: mongoose.Types.ObjectId | null
+    ): Promise<mongoose.Types.ObjectId | null> {
+        try {
+            const snap = await Snapshot.create({
+                userId,
+                projectId,
+                parentSnapshot: parentSnapshotId,
+                status: state
+            });
+
+            if (!files.length) return snap._id;
+
+            const bulkOps = files.map(file => ({
+                insertOne: {
+                    document: {
+                        userId,
+                        projectId,
+                        snapshotId: snap._id,
+                        path: file.path,
+                        content: file.content
+                    }
+                }
+            }));
+
+            await snapShotFile.bulkWrite(bulkOps);
+
+            return snap._id;
+        } catch (error) {
+            console.error("Snapshot Failed:", error);
+            return null;
+        }
+    }
+
 
 
     private static async handleMissingImports(
@@ -395,7 +467,7 @@ BOUNDARIES:
 
             if (!plan[path]) {
                 plan[path] = {
-                    responsibilities: [`Auto-generated dependency for ${generated.fileName}`],
+                    responsibilities: [`Auto-generated dependency for ${generated.path}`],
                     action: "create",
                     role: "utility"
                 };

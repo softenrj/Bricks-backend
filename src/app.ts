@@ -25,7 +25,14 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Logger
 app.use(morgan("dev"));
-app.use(compression());
+app.use(compression({
+    filter: (req,res) => {
+        if (req.headers.accept?.includes("text/event-stream")) {
+            return false;
+        }
+        return compression.filter(req, res);
+    }
+}));
 helmetConfig(app);
 corsConfig(app);
 
