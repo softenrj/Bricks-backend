@@ -17,13 +17,10 @@ declare global {
 
 class AuthMiddleware {
   private static extractToken(req: Request): string | null {
-    // if (req.headers.authorization?.startsWith("Bearer ")) {
-    //   return req.headers.authorization.split(" ")[1];
-    // }
-
-    if (req.cookies.token) {
-      return req.cookies.token;
+    if (req.headers.authorization?.startsWith("Bearer ")) {
+      return req.headers.authorization.split(" ")[1];
     }
+
     return null;
   }
 
@@ -47,6 +44,26 @@ class AuthMiddleware {
       return res.status(401).json({ message: "Unauthorized: User not found", unauthorized: true });
     }
   });
+
+  public static streamAuth = catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const token = req.query.token as string;
+      if (!token) {
+        return res.status(401).json({ message: "Unauthorized: No token provided", unauthorized: true });
+      }
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      const user = await User.findOne({ firebaseId: decodedToken.uid }, { _id: 1 });
+
+      if (!user) {
+        return res.status(401).json({ message: "Unauthorized: User not found", unauthorized: true });
+      }
+
+      req.userId = user._id;
+      next();
+    } catch (error) {
+      return res.status(401).json({ message: "Unauthorized: User not found", unauthorized: true });
+    }
+  })
 }
 
 export const requireAdmin = (
@@ -76,3 +93,4 @@ export const requireAdmin = (
 
 export default AuthMiddleware;
 export const isAuth = AuthMiddleware.isAuthenticated;
+export const isStreamAuth = AuthMiddleware.streamAuth;
