@@ -26,11 +26,11 @@ export const archForgeCodeGenBricks = async (req: Request, res: Response): Promi
         sendResponse(res, 200, { success: true, message: "Process is Running", data: jobId });
 
 
-        // await ArchForge._process_({
-        //     userId, projectId, cursor_fileId, prompt, jobId
-        // })
+        await ArchForge._process_({
+            userId, projectId, cursor_fileId, prompt, jobId
+        })
 
-        // pushProjectHistory({ userId, projectId, description: `Initiated ArchForge Code Generation with prompt: "${prompt.substring(0, 30)}..."` }, BrickHistoryTypeEnum.ArchForge)
+        pushProjectHistory({ userId, projectId, description: `Initiated ArchForge Code Generation with prompt: "${prompt.substring(0, 30)}..."` }, BrickHistoryTypeEnum.ArchForge)
     } catch (error) {
         console.error("Error ArchForge Controller:", error);
         sendResponse(res, 500, { success: false, message: "Internal Server Error" });
