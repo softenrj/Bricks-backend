@@ -10,17 +10,17 @@ import { UserStats } from "../model/userStats.js";
 
 export const signIn = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { email, username, firebaseId, token, authType } = req.body;
+        const { email, username, firebaseId, token, authType, profile } = req.body;
 
         if (!firebaseId) {
             sendResponse(res, 400, { success: false, message: "firebaseId is required", })
             return;
         }
-        let user = await User.findOne({ firebaseId });
+        let user = await User.findOne({ firebaseId, authType });
 
         if (!user) {
             const uid = userIdProvider()
-            user = await User.create({ email, username, firebaseId, token, authType, uid });
+            user = await User.create({ email, username, firebaseId, token, authType, uid, profile });
         }
 
         sendResponse(res, 200, ({ success: true, message: "User signed in successfully", data: user }));
