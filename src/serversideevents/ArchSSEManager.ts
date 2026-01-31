@@ -1,4 +1,5 @@
 import { Response } from "express"
+import mongoose, { ObjectId } from "mongoose";
 
 class ARCH_SSE_MANAGER {
     private clients = new Map<string, Response>();
@@ -19,12 +20,12 @@ class ARCH_SSE_MANAGER {
         client.write(`data: ${JSON.stringify(data)}\n\n`)
     }
 
-    complete(jobId: string) {
+    complete(jobId: string, snapids: { snapv1Id: string, snapv2Id: string } | null) {
         const client = this.clients.get(jobId);
         if (!client) return;
 
         client.write(`event: complete\n`);
-        client.write(`data: done\n\n`);
+        client.write(`data: ${JSON.stringify(snapids)}\n\n`);
         client.end();
         this.clients.delete(jobId);
     }

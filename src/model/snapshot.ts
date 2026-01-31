@@ -12,6 +12,7 @@ export interface ISnapshot {
     projectId: mongoose.Types.ObjectId;
     parentSnapshot: mongoose.Types.ObjectId | null;
     status: snapshotEnum;
+    expiresAt: Date;
     createAt: Date;
     updatedAt: Date;
 }
@@ -20,7 +21,8 @@ const snapshotSchema = new mongoose.Schema<ISnapshot>({
     userId: { type: mongoose.Schema.ObjectId, required: true, ref: "users", index: true },
     projectId: { type: mongoose.Schema.ObjectId, required: true, ref: "Project", index: true },
     parentSnapshot: { type: mongoose.Schema.ObjectId, required: false, index: true },
-    status: { type: String, enum: Object.values(snapshotEnum), required: true, default: snapshotEnum.DRAFT }
+    status: { type: String, enum: Object.values(snapshotEnum), required: true, default: snapshotEnum.DRAFT },
+    expiresAt: { type: Date, required: true, default: () => new Date(Date.now() + 15 * 60 * 1000) } // 15 min
 }, { timestamps: true })
 
 export const Snapshot = mongoose.model<ISnapshot>("snapshots",snapshotSchema);

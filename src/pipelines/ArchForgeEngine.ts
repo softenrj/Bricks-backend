@@ -130,8 +130,8 @@ export default class ArchForge {
 
             const plannerScript = await this.archProjectPlanner(relatedFiles, codeBase, prompt, projectId, userId);
 
-            await this.ArchCodeGenerator(relatedFiles, plannerScript, projectId, userId, jobId)
-            archSSEmanager.complete(jobId);
+            const snapids = await this.ArchCodeGenerator(relatedFiles, plannerScript, projectId, userId, jobId)
+            archSSEmanager.complete(jobId, snapids);
         } catch (error) {
             console.error("Error in lexicalArchEngin:", error);
             return null;
@@ -159,7 +159,7 @@ export default class ArchForge {
         projectId: mongoose.Types.ObjectId,
         userId: mongoose.Types.ObjectId,
         jobId: string
-    ): Promise<void> {
+    ): Promise<{ snapv1Id: string, snapv2Id: string } | null> {
         try {
 
             let planKeys = Object.entries(planedScript).sort(([, a], [, b]) => {
@@ -409,8 +409,11 @@ export default class ArchForge {
                 "complete"
             );
 
+            return { snapv1Id: snapshotv1Id, snapv2Id: snapshotv2Id } as any;
+
         } catch (error) {
             console.error("ArchCodeGenerator Failed:", error);
+            return null;
         }
     }
 

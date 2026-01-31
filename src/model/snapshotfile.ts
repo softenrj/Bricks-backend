@@ -19,7 +19,7 @@ const snapshotSchema = new mongoose.Schema<ISnapshotFile>({
     snapshotId: { type: mongoose.Schema.ObjectId, required: true, ref: "snapshots", index: true },
     action: { type: String, required: true, default: "modify" },
     path: { type: String, required: true },
-    content: { type: String, required: true, default: "" }
+    content: { type: String, default: "" }
 }, { timestamps: true })
 
 export const snapShotFile = mongoose.model<ISnapshotFile>("snapshotfiles",snapshotSchema);
