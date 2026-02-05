@@ -33,6 +33,26 @@ export const projectUpdate = async (path: string, fsContent: string, name: strin
   }
 };
 
+export const folderRemove = async (path: string, projectId: string, userId: mongoose.Types.ObjectId) => {
+  try {
+    const name = path.split("/").at(-1);
+    const rmFolder = await ProjectFile.deleteMany({
+      path, projectId
+    })
+
+    RealtimeStatusSocket.__push({
+      id: uIdProvider(),
+      type: 'info',
+      message: `[Info] ${name} Folder Removed successfully`
+    }, userId)
+
+    return !!rmFolder
+  } catch (error) {
+    console.error("Error Deleting Folder:", error);
+    return false;
+  }
+}
+
 export const projectSocket = (socket: Socket) => {
   // Update file content
   socket.on("file:update", async (req) => {
@@ -92,6 +112,20 @@ export const projectSocket = (socket: Socket) => {
       socket.emit("file:add:ack", { path, name, success: false });
     }
   });
+
+  // remove folder
+  socket.on("folder:remove", async (req) => {
+    const { path, projectId } = req;
+    const userId = socket.data.userId;
+    try {
+      const rm = await folderRemove(path,projectId,userId);
+      pushProjectHistory({ userId, projectId: new mongoose.Types.ObjectId(projectId), description: `Removed Folder at path "${path}".`}, BrickHistoryTypeEnum.project);
+      socket.emit("file:remove:ack", { path, success: !!rm });
+    } catch (err) {
+      console.error(err);
+      socket.emit("file:remove:ack", { path, success: false });
+    }
+  })
 
   // Remove a file
   socket.on("file:remove", async (req) => {

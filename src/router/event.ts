@@ -5,7 +5,7 @@ import { uploadAudioToCloudinary, uploadFiles, uploadToCloudnary } from "../midd
 
 const router = Router();
 
-router.post('/add',requireAdmin, (req, res, next: NextFunction) => {console.log(req); next()}, uploadFiles, uploadToCloudnary, uploadAudioToCloudinary, eventController.createNewEvent)
+router.post('/add',requireAdmin, uploadFiles, uploadToCloudnary, uploadAudioToCloudinary, eventController.createNewEvent)
 router.get('/get', isAuth, eventController.getEvents)
 
 router.post('/like/:eventId', isAuth, eventController.likeEvent)
