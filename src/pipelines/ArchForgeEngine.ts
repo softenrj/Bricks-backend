@@ -10,7 +10,7 @@ import { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions.
 import { ArchEnginStatusSocket } from "../sockets/ArchEnginProcess.js";
 import { processIdProvider, uIdProvider } from "../service/user.uidProvider.js";
 import { archSSEmanager } from "../serversideevents/ArchSSEManager.js";
-import { codeGenPrompt, folderStructurePrompt } from "./ArchPrompts.js";
+import { codeGenPrompt, folderStructurePrompt, promptCraftMaster } from "./ArchPrompts.js";
 import { Snapshot, snapshotEnum } from "../model/snapshot.js";
 import { snapShotFile } from "../model/snapshotfile.js";
 import { uploadFiles } from "../middleware/fileUpload.js";
@@ -65,16 +65,47 @@ export default class ArchForge {
         //! assume there is text only (Version 1)
         const { prompt } = processArgs;
 
-        const safePrompt = this.validatePrompt(prompt);
-        processArgs.prompt = safePrompt;
+        const systemPrompt = await this.systemPrompt(prompt);
+        const process = processIdProvider();
+
+        this.pushToUser(
+            `⚡ Improved Prompt: ${systemPrompt}`,
+            processArgs.projectId,
+            processArgs.userId,
+            process,
+            "render"
+        );
+
+        this.pushToUser(
+            `⚡ Improved Prompt: ${systemPrompt}`,
+            processArgs.projectId,
+            processArgs.userId,
+            process,
+            "complete"
+        );
 
         await this.lexicalArchPipeLine(processArgs);
     }
 
-    private static validatePrompt(prompt: string): string {
+    private static async systemPrompt(prompt: string): Promise<string> {
         const pattern = /\s+\W/g;
         const safePrompt = prompt.replace(pattern, " ");
-        return safePrompt.trim();
+
+
+
+        const message: ChatCompletionMessageParam[] = [
+            { role: 'user', content: safePrompt },
+            { role: "assistant", content: promptCraftMaster }
+        ]
+
+        const completion = await AI_MODULE.chat.completions.create({
+            model: "llama-3.1-8b-instant",
+            messages: message,
+            temperature: 0.2,
+        })
+
+        const systemPrompt = completion.choices?.[0]?.message?.content || "";
+        return systemPrompt;
     }
 
     // #region ------- Laxical ArchPipeLine --------
