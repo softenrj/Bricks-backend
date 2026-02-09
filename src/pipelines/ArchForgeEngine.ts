@@ -63,49 +63,8 @@ export default class ArchForge {
 
     public static async _process_(processArgs: Process) {
         //! assume there is text only (Version 1)
-        const { prompt } = processArgs;
-
-        const systemPrompt = await this.systemPrompt(prompt);
-        const process = processIdProvider();
-
-        this.pushToUser(
-            `⚡ Improved Prompt: ${systemPrompt}`,
-            processArgs.projectId,
-            processArgs.userId,
-            process,
-            "render"
-        );
-
-        this.pushToUser(
-            `⚡ Improved Prompt: ${systemPrompt}`,
-            processArgs.projectId,
-            processArgs.userId,
-            process,
-            "complete"
-        );
 
         await this.lexicalArchPipeLine(processArgs);
-    }
-
-    private static async systemPrompt(prompt: string): Promise<string> {
-        const pattern = /\s+\W/g;
-        const safePrompt = prompt.replace(pattern, " ");
-
-
-
-        const message: ChatCompletionMessageParam[] = [
-            { role: 'user', content: safePrompt },
-            { role: "assistant", content: promptCraftMaster }
-        ]
-
-        const completion = await AI_MODULE.chat.completions.create({
-            model: "llama-3.1-8b-instant",
-            messages: message,
-            temperature: 0.2,
-        })
-
-        const systemPrompt = completion.choices?.[0]?.message?.content || "";
-        return systemPrompt;
     }
 
     // #region ------- Laxical ArchPipeLine --------
