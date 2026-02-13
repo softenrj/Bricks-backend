@@ -1,25 +1,27 @@
 import mongoose from "mongoose";
 
 export enum EffectEnum {
-    CHRISTMAS = "christmas",
-    NEW_YEAR = "new_year",
-    REPUBLIC_DAY = "republic_day",
-    DIWALI = "diwali",
-    NONE = "none"
+  CHRISTMAS = "christmas",
+  NEW_YEAR = "new_year",
+  REPUBLIC_DAY = "republic_day",
+  DIWALI = "diwali",
+  Mahashivratri = "mahashivratri",
+  NONE = "none"
 }
 
 export interface IEvent {
-    _id: mongoose.Types.ObjectId;
-    name: string;
-    description: string;
-    thumbnail: string; 
-    audio?: string;
-    effect?: EffectEnum;
-    liveAt: Date;
-    expireAt: Date;
-    liked: number;
-    updatedAt: Date;
-    createdAt: Date;
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  description: string;
+  thumbnail: string;
+  lyrics?: { time: number, text: string }[]
+  audio?: string;
+  effect?: EffectEnum;
+  liveAt: Date;
+  expireAt: Date;
+  liked: number;
+  updatedAt: Date;
+  createdAt: Date;
 }
 
 const EventSchema = new mongoose.Schema<IEvent>(
@@ -29,6 +31,10 @@ const EventSchema = new mongoose.Schema<IEvent>(
     liveAt: { type: Date, required: false },
     expireAt: { type: Date, required: true },
     thumbnail: { type: String, required: true },
+    lyrics: [{
+      time: { type: Number, required: true }, // seconds
+      text: { type: String, required: true },
+    }],
     audio: { type: String },
     liked: { type: Number, default: 0 },
     effect: {

@@ -10,7 +10,7 @@ export const createNewEvent = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { name, description, effect, expireAt, liveAt } = req.body;
+    const { name, description, lyrics, effect, expireAt, liveAt } = req.body;
 
     if (!name || !liveAt || !expireAt) {
       sendResponse(res, 400, {
@@ -43,6 +43,7 @@ export const createNewEvent = async (
       name,
       description,
       effect,
+      lyrics,
       thumbnail,
       liveAt: start,
       expireAt: end,
@@ -81,7 +82,7 @@ export const getEvents = async (req: Request, res: Response): Promise<void> => {
 
     const bricksEvent = await BricksEvent.aggregate([
       { $match: query },
-      { $sort: { liveAt: sort_filter } },
+      { $sort: { createdAt: -1 } },
       { $limit: Number(limit) + 1 },
       {
         $lookup: {
