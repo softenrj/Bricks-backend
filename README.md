@@ -1,252 +1,281 @@
-<div align="center">
+## 🚀 Bricks Backend
 
-# 🚀 Express TypeScript Boilerplate
+**Bricks Backend** is the secure, cloud-ready service layer that powers **[Bricks AI](https://github.com/softenrj/Bricks)** – an AI-powered IDE that transforms ideas into functional applications directly in your browser.
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9.2-blue.svg)](https://www.typescriptlang.org/)
-[![Express](https://img.shields.io/badge/Express.js-5.x-lightgrey.svg)](https://expressjs.com/)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Vitest](https://img.shields.io/badge/Tested%20with-Vitest-6E9F18.svg)](https://vitest.dev/)
-[![Swagger](https://img.shields.io/badge/API%20Docs-Swagger-green.svg)](http://localhost:3000/docs)
+This repository contains the backend services that handle:
 
-### 🛠️ Production-ready Node.js + Express + TypeScript boilerplate with enterprise-grade features
+- **Project & workspace orchestration**
+- **AI code generation and execution pipelines**
+- **Authentication, authorization & user/session management**
+- **Realtime collaboration & messaging** _(in active development)_
+- **Secure communication with the browser-based IDE**
 
-> ⚡ **Zero-config setup** | 🛡️ **Security-first** | 📊 **Fully tested** | 🎯 **Type-safe**
+> **Feature status**  
+> - **Voice** and **image-based** interactions are **under active development** and not yet considered production-ready.  
+> - **Realtime collaboration** capabilities exposed by this backend are also **evolving** and may be experimental or incomplete depending on your deployment.
 
-</div>
-
----
-
-## ✨ What's Inside
-
-| Feature | Description | Status |
-|---------|-------------|--------|
-| 🎯 **TypeScript 5.9** | Latest TypeScript with strict mode | ✅ |
-| 🛡️ **Security Suite** | Helmet, CORS, Rate Limiting | ✅ |
-| 📊 **Testing** | Vitest + Supertest + Coverage | ✅ |
-| 📝 **API Documentation** | Swagger/OpenAPI 3.0 | ✅ |
-| 🎨 **Code Quality** | ESLint + Prettier + Husky | ✅ |
-<!-- | 🗄️ **Database Ready** | MongoDB + Mongoose | ✅ | -->
-| 🚀 **Dev Experience** | Hot reload, linting, formatting | ✅ |
-| 📦 **Production Ready** | Build optimization, error handling | ✅ |
-
----
-A production-ready Node.js + Express + TypeScript boilerplate, 
-Generated using [**create-rjx**](https://www.npmjs.com/package/create-rjx) ⚡
----
-
-## 📁 Project Structure
-
-```
-src/
-├── 📄 app.ts              # Express app configuration
-├── 📄 server.ts           # Server entry point
-├── 📁 config/             # Configuration modules
-│   ├── corsConfig.ts      # CORS configuration
-│   ├── env.ts            # Environment variables
-│   ├── halmetConfig.ts    # Security headers
-│   ├── loggerConfig.ts    # Winston logger setup
-│   └── rateLimitConfig.ts # Rate limiting
-├── 📁 docs/               # API documentation
-│   └── swagger.yaml      # OpenAPI 3.0 spec
-├── 📁 middleware/        # Custom middleware
-│   └── errorHandler.ts   # Global error handler
-├── 📁 tests/             # Test suites
-│   └── health.test.ts    # Health check tests
-└── 📄 router.ts          # Route definitions
-```
+> **Note**  
+> The public Bricks frontend lives at **[`softenrj/Bricks`](https://github.com/softenrj/Bricks)**.  
+> This repository provides the backend APIs consumed by that UI.
 
 ---
 
-## 🛠️ Available Scripts
+## ✨ High‑Level Overview
 
-| Script | Description | Command |
-|--------|-------------|---------|
-| `dev` | Start development server | `npm run dev` |
-| `dev:hot` | Hot reload + linting | `npm run dev:hot` |
-| `build` | Build for production | `npm run build` |
-| `start` | Start production server | `npm start` |
-| `test` | Run tests | `npm test` |
-| `test:watch` | Watch mode testing | `npm run test:watch` |
-| `coverage` | Generate coverage report | `npm run coverage` |
-| `lint` | Lint code | `npm run lint` |
-| `clean` | Clean build artifacts | `npm run clean` |
+- **Domain**: Backend for the Bricks AI IDE and project workspace
+- **Role**: Acts as the single source of truth for projects, sessions, files, and AI operations
+- **Clients**:  
+  - Bricks web IDE (`https://bricks-three-rose.vercel.app`)  
+  - Internal services / automations  
+- **Focus**: Reliability, security, observability, and performance under AI-heavy workloads
 
----
+At a high level, Bricks Backend is responsible for:
 
-## 🎯 API Documentation
-
-### 📊 Swagger UI
-Access interactive API documentation at: [http://localhost:3000/docs](http://localhost:3000/docs)
-
-### 🔍 Health Check Endpoint
-```http
-GET /health
-```
-
-**Response:**
-```json
-{
-  "status": "ok",
-  "uptime": 12.345,
-  "timestamp": 1690000000000
-}
-```
+- **Orchestrating AI requests** (code generation, refactors, explanations, etc.)
+- **Managing project state** (files, versions, snapshots, metadata)
+- **Coordinating real-time collaboration & events** _(designed, with some features in development)_
+- **Enforcing access control and limits**
 
 ---
 
-## 🛡️ Security Features
+## 🧱 Core Responsibilities
 
-### 🔒 Helmet
-- Content Security Policy (CSP)
-- X-Frame-Options
-- X-Content-Type-Options
-- And more security headers
-
-### 🌐 CORS
-- Configurable CORS policies
-- Environment-based settings
-
-### ⚡ Rate Limiting
-- Global rate limiting
-- Configurable per environment
-- IP-based tracking
+- **Project Management**
+  - Create, read, update, delete projects and workspaces
+  - Maintain metadata for files, tabs, and editor state
+- **AI Operations**
+  - Handle prompts from the Bricks IDE (text in production; voice and image metadata in development)
+  - Route and track model requests and responses
+  - Persist relevant context for future interactions
+- **Execution & Preview**
+  - Manage build / run tasks sent from the browser
+  - Stream logs and results back to the client
+- **Collaboration**
+  - Session presence & document events _(in development)_
+  - Notifications for changes, builds, and AI actions
+- **Security**
+  - User auth & session validation
+  - Rate limiting and abuse protection
 
 ---
 
-## 🧪 Testing Strategy
+## 🏗️ Architecture (Conceptual)
 
-### ✅ Test Coverage
-- **Unit Tests**: Vitest for fast execution
-- **Integration Tests**: Supertest for API testing
-- **Coverage Reports**: Built-in coverage analysis
+Bricks Backend is designed around a **modular, service-oriented architecture**:
 
-### 🎯 Test Commands
+- **API Layer**
+  - Exposes REST/JSON (and optionally WebSocket) endpoints
+  - Handles auth, validation, and request shaping
+- **Domain / Application Layer**
+  - Encodes all business rules (projects, sessions, AI workflows)
+  - Orchestrates calls to models, storage, and queues
+- **Infrastructure Layer**
+  - Database & cache integration
+  - Queueing / background jobs
+  - Logging, metrics, and tracing
+
+This separation keeps:
+
+- **Domain logic** independent from frameworks
+- **Integrations** (DB, model providers, queues) swappable
+- **Scaling** straightforward when traffic grows
+
+---
+
+## 🔌 API Surface (Typical Patterns)
+
+> **Important**: Exact endpoints and payloads may differ from this description if your local implementation has evolved. Use this section as a conceptual guide.
+
+- **Auth & Users**
+  - `POST /auth/login`
+  - `POST /auth/logout`
+  - `GET /me`
+- **Projects**
+  - `GET /projects`
+  - `POST /projects`
+  - `GET /projects/:id`
+  - `PATCH /projects/:id`
+  - `DELETE /projects/:id`
+- **Files**
+  - `GET /projects/:id/files`
+  - `PUT /projects/:id/files/:path`
+  - `DELETE /projects/:id/files/:path`
+- **AI / Chat / Actions**
+  - `POST /projects/:id/ai/chat`
+  - `POST /projects/:id/ai/generate`
+  - `POST /projects/:id/ai/refactor`
+- **Execution**
+  - `POST /projects/:id/run`
+  - `GET /projects/:id/logs`
+
+Wherever possible:
+
+- Requests are **JSON**.
+- Responses are **JSON**, with consistent shapes for `data`, `error`, and `meta`.
+
+---
+
+## ⚙️ Local Development
+
+### 1. Prerequisites
+
+- **Node.js** (LTS recommended)
+- **npm** or **yarn** (depending on your project setup)
+- Access to any required **API keys**, **database instances**, or **model providers**
+
+### 2. Installation
+
+In the repository root:
+
 ```bash
-# Run all tests
+npm install
+# or
+yarn install
+```
+
+### 3. Environment Variables
+
+Create a `.env` (or `.env.local`) file based on the template (if present), and fill in required values:
+
+- **Authentication**
+  - `JWT_SECRET` or relevant key
+  - Provider secrets (e.g., OAuth, Firebase, etc.)
+- **Database / Storage**
+  - `DATABASE_URL`
+  - `REDIS_URL` or cache connection
+- **AI / Model Providers**
+  - `OPENAI_API_KEY` or equivalent
+  - Any other provider keys
+- **Bricks Frontend Integration**
+  - `BRICKS_FRONTEND_URL` (e.g. `https://bricks-three-rose.vercel.app`)
+
+> **Security reminder**: Never commit `.env` files or secrets to version control.
+
+### 4. Running the Server
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+By default, the API will be available on something like:
+
+- `http://localhost:PORT` (consult your `package.json` / config for the exact port)
+
+### 5. Running Tests (If Configured)
+
+```bash
 npm test
-
-# Watch mode
-npm run test:watch
-
-# Coverage report
-npm run coverage
-```
-
-<!-- ---
-
-## 🗄️ Database Support
-
-### MongoDB (Included)
-- Mongoose ODM configured
-- Connection pooling
-- Environment-based configuration
-
-### Ready for Extensions
-- PostgreSQL support ready
-- Prisma ORM support
-- SQL database connectors
-
---- -->
-
-## 🌍 Environment Configuration
-
-### Environment Files
-```bash
-.env.dev     # Development environment
-.env.prod    # Production environment
-.env.test    # Test environment
-```
-
-### Environment Variables
-```bash
-# Server
-PORT=3000
-NODE_ENV=development
-
-# # Database
-# MONGODB_URI=mongodb://localhost:27017/myapp
-
-# # Security
-# RATE_LIMIT_WINDOW=15
-# RATE_LIMIT_MAX=100
+# or
+yarn test
 ```
 
 ---
 
-## 🎨 Code Quality Tools
+## 🔐 Security & Best Practices
 
-### ESLint Configuration
-- TypeScript-specific rules
-- Import sorting
-- Unused imports detection
-- Prettier integration
-
-### Prettier Setup
-- Consistent code formatting
-- TypeScript/JavaScript support
-- JSON/CSS/Markdown formatting
-
-### Git Hooks
-- Pre-commit linting
-- Pre-commit formatting
-- Commit message validation
+- **Secrets Management**
+  - Use environment variables for all secrets.
+  - Prefer a secrets manager in production (e.g. Vault, cloud provider services).
+- **Auth & Sessions**
+  - Validate tokens on every request.
+  - Avoid storing sensitive data in JWT payloads.
+- **Input Validation**
+  - Validate request bodies, query params, and headers.
+  - Enforce strict types between frontend and backend.
+- **Rate Limiting**
+  - Apply per-IP and per-user limits for sensitive / AI-heavy endpoints.
+  - Protect login, AI actions, and project write operations.
 
 ---
 
-## 🚀 Deployment
+## 🧩 Relation to Bricks Frontend
 
-### Build for Production
-```bash
-npm run build
-npm start
-```
+This backend is designed to be consumed by the **Bricks** web IDE:
 
-<!-- ### Docker Ready
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY dist/ ./dist/
-EXPOSE 3000
-CMD ["node", "dist/server.js"]
-``` -->
+- Frontend repository: **[`softenrj/Bricks`](https://github.com/softenrj/Bricks)**
+- Production app: `https://bricks-three-rose.vercel.app`
+
+Typical frontend → backend flows:
+
+- User signs in → frontend obtains auth token → calls backend APIs
+- User creates or opens a project → backend returns project structure & metadata
+- User interacts with AI (chat, refactor, generate) → backend orchestrates model calls
+- User runs the project → backend triggers build/run, streams logs and results
+
+---
+
+## 🧪 Environments
+
+Typical environment layout (may vary by deployment):
+
+- **Local** – developer machines
+- **Staging** – for pre-production testing
+- **Production** – live traffic from Bricks users
+
+Suggested practices:
+
+- Use separate databases and credentials per environment.
+- Enable more verbose logging in non-production environments.
+- Keep schema migrations automated and version-controlled.
 
 ---
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+If you are working on Bricks Backend internally or in a trusted environment:
+
+- **Open an issue** (or internal task) before large changes.
+- **Discuss architecture** for significant features or refactors.
+- **Keep documentation up-to-date** when introducing new APIs or breaking changes.
+
+For the public Bricks frontend, see the contribution guidelines in **[`softenrj/Bricks`](https://github.com/softenrj/Bricks)**.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **Apache License 2.0**.
+
+- **Commercial use**: allowed under the terms of the license.
+- **Modification & redistribution**: permitted, provided you comply with the license conditions.
+- **Patent rights**: explicitly granted as described in Section 3 of the license.
+
+See the full license text in the `LICENSE` file or online at **[Apache License 2.0][Apache-2.0]**.
 
 ---
 
-## 👨‍💻 Author
+## 🧭 Roadmap (Conceptual)
 
-**Raj (Softenrj)**
+Planned or potential enhancements:
 
-<div align="center">
-
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/softenrj)
-[![NPM](https://img.shields.io/badge/NPM-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/create-rjx)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/raj-sharma-23447527b)
-
-</div>
+- **Richer AI workflows**
+  - Multi-step agents and workflows orchestrated server-side
+  - Deeper context windows and project-wide awareness
+- **Enhanced Observability**
+  - Detailed traces for AI calls and project events
+  - Dashboards for performance and error rates
+- **Advanced Collaboration**
+  - Presence, cursors, comments, and review workflows
+  - Time-travel and replay of project history
 
 ---
 
-<div align="center">
+## 💬 Support & Contact
 
-**⭐ Star this repo if you found it helpful!**
+For general information about Bricks, visit the main repo:
 
-</div>
+- **Bricks Frontend & Project Overview**: **[`softenrj/Bricks`](https://github.com/softenrj/Bricks)**
+
+For internal teams, follow your usual channels (Slack/Teams/email) to reach the maintainers of this backend.
+
+---
+
+## ❤️ Acknowledgements
+
+Bricks Backend is part of the broader **Bricks AI** vision:  
+**Transform ideas → code — instantly**, with a beautiful, collaborative, AI-native developer experience.
+
+[Apache-2.0]: https://www.apache.org/licenses/LICENSE-2.0
+
