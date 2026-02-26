@@ -2,6 +2,8 @@
 
 **Bricks Backend** is the secure, cloud-ready service layer that powers **[Bricks AI](https://github.com/softenrj/Bricks)** – an AI-powered IDE that transforms ideas into functional applications directly in your browser.
 
+This backend was scaffolded with the [`create-rjx`](https://www.npmjs.com/package/create-rjx) tool.
+
 This repository contains the backend services that handle:
 
 - **Project & workspace orchestration**
