@@ -6,6 +6,7 @@ export enum EffectEnum {
   REPUBLIC_DAY = "republic_day",
   DIWALI = "diwali",
   Mahashivratri = "mahashivratri",
+  HOLI = "holi",
   NONE = "none"
 }
 
