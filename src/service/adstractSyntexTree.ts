@@ -15,7 +15,7 @@ export enum FileType {
 }
 
 export interface FileContextResult {
-  snippet: string;
+  snippets: { symbolName: string, snippet: string }[];
   imports: string[];
   exports: string[];
   dependencies: string[];
@@ -61,10 +61,10 @@ export function extractFileContextAST(
   fileContent: string,
   targetIdentifier?: string
 ): FileContextResult {
-  
+
   if (fileName.endsWith(".json")) {
     return {
-      snippet: fileContent,
+      snippets: [{ symbolName: fileName, snippet: fileContent }],
       imports: [],
       exports: [],
       dependencies: [],
@@ -74,7 +74,7 @@ export function extractFileContextAST(
   }
   const fileType = getFileType(fileName);
 
-  let snippet = fileContent;
+  let snippets: { symbolName: string, snippet: string }[] = [];
   let imports: string[] = [];
   let exports: string[] = [];
   let dependencies: string[] = [];
@@ -107,18 +107,56 @@ export function extractFileContextAST(
       }
     });
 
-    // Extract snippet for target function/component
-    if (targetIdentifier) {
-      traverse.default(ast, {
-        enter(path: any) {
-          const nodeName: string | undefined = path.node?.id?.name || path.node?.key?.name;
-          if (nodeName === targetIdentifier) {
-            snippet = generate.generate(path.node).code;
-            path.stop();
-          }
+    // Extract snippetss for target function/component
+    traverse.default(ast, {
+
+      FunctionDeclaration(path: any) {
+        const name = path.node.id?.name;
+
+        if (!name) return;
+
+        const code = generate.generate(path.node).code;
+
+        snippets.push({ symbolName: name, snippet: code });
+      },
+
+      VariableDeclarator(path: any) {
+        const name = path.node.id?.name;
+        const init = path.node.init;
+
+        if (
+          name &&
+          (init?.type === "ArrowFunctionExpression" ||
+            init?.type === "FunctionExpression")
+        ) {
+          const code = generate.generate(path.parentPath.node).code;
+
+          snippets.push({ symbolName: name, snippet: code });
         }
-      });
-    }
+      },
+
+      ClassMethod(path: any) {
+        const name = path.node.key?.name;
+
+        if (!name) return;
+
+        const code = generate.generate(path.node).code;
+
+        snippets.push({ symbolName: name, snippet: code });
+
+      },
+
+      ObjectMethod(path: any) {
+        const name = path.node.key?.name;
+
+        if (!name) return;
+
+        const code = generate.generate(path.node).code;
+
+        snippets.push({ symbolName: name, snippet: code });
+      }
+
+    });
   }
 
   else if ([FileType.HTML, FileType.CSS, FileType.MD].includes(fileType)) {
@@ -126,12 +164,12 @@ export function extractFileContextAST(
       const root = parseHTML(fileContent);
       if (targetIdentifier) {
         const el: HTMLElement | null = root.querySelector(targetIdentifier);
-        snippet = el ? el.toString() : fileContent;
+        snippets = el ? [{ symbolName: fileName, snippet: el.toString()}] : [{ symbolName: fileName, snippet: fileContent}];
       }
     }
   }
 
-  const lines = snippet.split("\n").length;
+  const lines = snippets.reduce((total,snip) => { return total + snip.snippet.length},0);
 
-  return { snippet, imports, exports, dependencies, lines, fileType };
+  return { snippets, imports, exports, dependencies, lines, fileType };
 }

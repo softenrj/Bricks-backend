@@ -23,12 +23,15 @@ export async function CortexPipeline(projectFile: IProjectFile, userId: mongoose
     const fileId = projectFile._id;
     const fileName = projectFile.name;
     const content = projectFile.content || "";
+    
+    const isLockFile = projectFile.name === "package-lock.json";
+    if (isLockFile) return;
     // #endregion
 
     // #region ------------------------- FILE CONTEXT -------------------------
     //! Use AST to extract snippet, imports, exports, dependencies, lines, fileType
     const context: FileContextResult = extractFileContextAST(fileName, content);
-    const { snippet, imports, exports, lines, dependencies, fileType } = context;
+    const { snippets, imports, exports, lines, dependencies, fileType } = context;
 
     /**
      * @function upsertContext
@@ -38,7 +41,7 @@ export async function CortexPipeline(projectFile: IProjectFile, userId: mongoose
     async function upsertContext() {
       return await FileContext.findOneAndUpdate(
         { projectId, fileId },
-        { snippet, imports, exports, dependencies, lines, fileType, filePath: projectFile.path },
+        { snippets, imports, exports, dependencies, lines, fileType, filePath: projectFile.path },
         { upsert: true, new: true }
       );
     }
@@ -56,7 +59,13 @@ export async function CortexPipeline(projectFile: IProjectFile, userId: mongoose
 
     // #region ------------------------- VECTOR -------------------------
     //! Generate vector embedding for snippet
-    const vector = snippet ? await getVectorEmbedding(snippet) : [];
+    const vectors = await Promise.all(
+      snippets.map(async (snip) => ({
+        symbolName: snip.symbolName,
+        snippet: snip.snippet,
+        vector: await getVectorEmbedding(snip.snippet)
+      }))
+    );
     const contextId = contentCollection._id;
 
     /**
@@ -65,15 +74,24 @@ export async function CortexPipeline(projectFile: IProjectFile, userId: mongoose
      * @returns {Promise<FileVector>}
      */
     async function upsertVector() {
-      return await FileVector.findOneAndUpdate(
-        { contextId, fileId, projectId },
-        { vector },
-        { upsert: true, new: true }
-      );
+      const process = await Promise.allSettled(vectors.map(async (v) =>
+        FileVector.findOneAndUpdate(
+          {
+            contextId,
+            fileId,
+            projectId,
+            symbolName: v.symbolName
+          },
+          {
+            vector: v.vector,
+            snippet: v.snippet
+          },
+          { upsert: true, new: true }
+        )
+      ))
+      return process;
     }
 
-    const isLockFile = projectFile.name === "package-lock.json";
-    if (isLockFile) return;
     const vectorCollection = await upsertVector();
 
     if (vectorCollection) {

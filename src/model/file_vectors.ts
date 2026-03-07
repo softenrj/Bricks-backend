@@ -3,6 +3,7 @@ export interface IFileVector extends Document {
     projectId: mongoose.Types.ObjectId;
     contextId: mongoose.Types.ObjectId;
     fileId: mongoose.Types.ObjectId;
+    symbolName: string;
     vector: number[];
     isDefault: boolean;
     createdAt: Date;
@@ -12,6 +13,7 @@ export interface IFileVector extends Document {
 const FileVectorSchema = new mongoose.Schema<IFileVector>({
     projectId: { type: Schema.ObjectId, ref: "Project", required: true, index: true },
     contextId: { type: Schema.ObjectId, ref: "FileContext", required: true, index: true },
+    symbolName: { type: String, required: true },
     fileId: { type: Schema.Types.ObjectId, ref: "ProjectFile", required: true, index: true },
     vector: { type: [Number], required: true },
     isDefault: { type: Boolean, default: false }
