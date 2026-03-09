@@ -74,6 +74,8 @@ export default class ArchForge {
 
             const processId = processIdProvider();
             this.pushToUser("🔍 Analyzing your request and scanning related project files...", projectId, userId, processId, "render");
+
+            // -------------- RAG ---------------------------
             const queryVector = await getVectorEmbedding(prompt);
 
             const relatedFiles = await FileVector.aggregate([{
@@ -82,8 +84,8 @@ export default class ArchForge {
                     path: "vector",
                     queryVector,
                     numCandidates: 380,
-                    limit: 5,
-                    filter: { projectId }
+                    limit: 12,
+                    filter: { projectId: new mongoose.Types.ObjectId(projectId) }
                 },
             },
             { $project: { fileId: 1, contextId: 1, score: { $meta: "vectorSearchScore" } } },
@@ -114,13 +116,27 @@ export default class ArchForge {
             },
             ])
 
+            const context = [];
+
+            relatedFiles.sort((cadidateA, candidateB) => candidateB.score - cadidateA.score);
+            const seen = new Set<string>();
+
+            for (const file of relatedFiles) {
+                if (context.length === 6) break;
+                const fileId = file._id.toString();
+                if (!seen.has(fileId)) {
+                    seen.add(fileId);
+                    context.push(file);
+                }
+            }
+
             const codeBase = await this.projectTree(projectId, userId)
 
             this.pushToUser("-", projectId, userId, processId, "complete");
 
-            const plannerScript = await this.archProjectPlanner(relatedFiles, codeBase, prompt, projectId, userId);
+            const plannerScript = await this.archProjectPlanner(context, codeBase, prompt, projectId, userId);
 
-            const snapids = await this.ArchCodeGenerator(relatedFiles, plannerScript, projectId, userId, jobId)
+            const snapids = await this.ArchCodeGenerator(context, plannerScript, projectId, userId, jobId)
             archSSEmanager.complete(jobId, snapids);
         } catch (error) {
             console.error("Error in lexicalArchEngin:", error);

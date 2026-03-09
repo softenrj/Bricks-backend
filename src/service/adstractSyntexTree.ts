@@ -15,7 +15,7 @@ export enum FileType {
 }
 
 export interface FileContextResult {
-  snippets: { symbolName: string, snippet: string }[];
+  snippets: { symbolName: string, snippet: string, functionType: string }[];
   imports: string[];
   exports: string[];
   dependencies: string[];
@@ -64,7 +64,7 @@ export function extractFileContextAST(
 
   if (fileName.endsWith(".json")) {
     return {
-      snippets: [{ symbolName: fileName, snippet: fileContent }],
+      snippets: [{ symbolName: fileName, snippet: fileContent, functionType: "none" }],
       imports: [],
       exports: [],
       dependencies: [],
@@ -74,7 +74,7 @@ export function extractFileContextAST(
   }
   const fileType = getFileType(fileName);
 
-  let snippets: { symbolName: string, snippet: string }[] = [];
+  let snippets: { symbolName: string, snippet: string, functionType: string }[] = [];
   let imports: string[] = [];
   let exports: string[] = [];
   let dependencies: string[] = [];
@@ -116,8 +116,15 @@ export function extractFileContextAST(
         if (!name) return;
 
         const code = generate.generate(path.node).code;
+        const isReactComponent = name[0] === name[0].toUpperCase();
 
-        snippets.push({ symbolName: name, snippet: code });
+        snippets.push({
+          symbolName: name,
+          snippet: code,
+          functionType: isReactComponent
+            ? "React functional component"
+            : "Function"
+        });
       },
 
       VariableDeclarator(path: any) {
@@ -131,7 +138,15 @@ export function extractFileContextAST(
         ) {
           const code = generate.generate(path.parentPath.node).code;
 
-          snippets.push({ symbolName: name, snippet: code });
+          const isReactComponent = name[0] === name[0].toUpperCase();
+
+snippets.push({
+  symbolName: name,
+  snippet: code,
+  functionType: isReactComponent
+    ? "React arrow functional component"
+    : "Arrow function"
+});
         }
       },
 
@@ -142,7 +157,11 @@ export function extractFileContextAST(
 
         const code = generate.generate(path.node).code;
 
-        snippets.push({ symbolName: name, snippet: code });
+snippets.push({
+  symbolName: name,
+  snippet: code,
+  functionType: "Class method"
+});
 
       },
 
@@ -153,7 +172,7 @@ export function extractFileContextAST(
 
         const code = generate.generate(path.node).code;
 
-        snippets.push({ symbolName: name, snippet: code });
+        snippets.push({ symbolName: name, snippet: code, functionType: "Object method" });
       }
 
     });
@@ -164,12 +183,13 @@ export function extractFileContextAST(
       const root = parseHTML(fileContent);
       if (targetIdentifier) {
         const el: HTMLElement | null = root.querySelector(targetIdentifier);
-        snippets = el ? [{ symbolName: fileName, snippet: el.toString()}] : [{ symbolName: fileName, snippet: fileContent}];
+        snippets = el ? [{ symbolName: fileName, snippet: el.toString(), functionType: "none" }] : [{ symbolName: fileName, snippet: fileContent, functionType: "none" }];
       }
     }
   }
 
-  const lines = snippets.reduce((total,snip) => { return total + snip.snippet.length},0);
+  const lines = snippets.reduce((total, snip) => { return total + snip.snippet.length }, 0);
 
   return { snippets, imports, exports, dependencies, lines, fileType };
 }
+

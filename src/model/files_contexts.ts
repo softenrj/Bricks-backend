@@ -4,7 +4,7 @@ export interface IFILECONTEXT extends Document {
     projectId: mongoose.Types.ObjectId;
     fileId: mongoose.Types.ObjectId;
     filePath: string;
-    snippet?: { symbolName: string; snippet: string }[];
+    snippet?: string;
     imports?: string[];
     exports?: string[];
     dependencies?: string[];
@@ -19,7 +19,7 @@ const FILECONTEXT_SCHEMA = new mongoose.Schema<IFILECONTEXT>({
     projectId: { type: Schema.ObjectId, ref: "Project", required: true, index: true },
     fileId: { type: Schema.ObjectId, ref: "ProjectFile", required: true, index: true },
     filePath: { type: String, default: '.'},
-    snippet: [{ symbolName: { type: String, required: true }, snippet: { type: String, required: true} }],
+    snippet: { type: String, default: ""},
     imports: { type: [String], default: [] },
     exports: { type: [String], default: [] },
     dependencies: { type: [String], default: [] },

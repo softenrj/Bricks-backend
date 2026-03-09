@@ -11,9 +11,10 @@ const GarbageCollecter = async () => {
     const ids = projects.map(i => i._id);
 
     // file remove
-    await ProjectFile.deleteMany({ projectId: { $in: [ids]}})
-    await files_contexts.deleteMany({ projectId: { $in: [ids]}})
-    await FileVector.deleteMany({ projectId: { $in: [ids]}})
+    await ProjectFile.deleteMany({ projectId: { $in: ids}})
+    await files_contexts.deleteMany({ projectId: { $in: ids}})
+    await FileVector.deleteMany({ projectId: { $in: ids}})
+    await Project.deleteMany({ _id: { $in: ids }})
 
     console.log('File garbage collecter [file] job completed at', new Date().toISOString());
 }

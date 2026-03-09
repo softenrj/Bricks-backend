@@ -41,7 +41,7 @@ export async function CortexPipeline(projectFile: IProjectFile, userId: mongoose
     async function upsertContext() {
       return await FileContext.findOneAndUpdate(
         { projectId, fileId },
-        { snippets, imports, exports, dependencies, lines, fileType, filePath: projectFile.path },
+        { snippet: content , imports, exports, dependencies, lines, fileType, filePath: projectFile.path },
         { upsert: true, new: true }
       );
     }
@@ -59,11 +59,22 @@ export async function CortexPipeline(projectFile: IProjectFile, userId: mongoose
 
     // #region ------------------------- VECTOR -------------------------
     //! Generate vector embedding for snippet
+
+    const embedding = snippets.map((snip) => {
+      return {
+        symbolName: snip.symbolName,
+        fileType: fileType,
+        imports: imports,
+        exports: exports,
+        functionType: snip.functionType,
+        snippet: snip.snippet
+      }
+    })
     const vectors = await Promise.all(
-      snippets.map(async (snip) => ({
+      embedding.map(async (snip) => ({
         symbolName: snip.symbolName,
         snippet: snip.snippet,
-        vector: await getVectorEmbedding(snip.snippet)
+        vector: await getVectorEmbedding(JSON.stringify(snip))
       }))
     );
     const contextId = contentCollection._id;
