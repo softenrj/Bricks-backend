@@ -59,6 +59,14 @@ interface snaps {
     content: string | null;
     action: string;
 }
+
+type GenerationRequest = {
+    task: "create" | "modify";
+    targetFile: string;
+    architecturalResponsibilities: string[];
+    constraints: string[];
+    existingFileContent: string | null;
+};
 export default class ArchForge {
 
     public static async _process_(processArgs: Process) {
@@ -186,58 +194,88 @@ export default class ArchForge {
             const parentFiles: snaps[] = [];
             const enrichedFiles: snaps[] = [];
 
-            for (let i = 0; i < planKeys.length; i++) {
-                const filePath = planKeys[i];
-                const info = planedScript[filePath];
+            // ---------------------- Batch Process ---------------
 
-                const tempProcessId = processIdProvider();
-                const action = info.action;
+            const batchSize = 3;
+            const batches: string[][] = [];
 
-                let fileCode: string | null = null;
+            for (let i = 0; i < planKeys.length; i += batchSize) {
+                batches.push(planKeys.slice(i, i + batchSize));
+            }
 
-                if (action === "modify") {
-                    fileCode = await this.fileCodeProvider(filePath, projectId);
+            const process = await Promise.all(
+                batches.map(async (batch) => {
+
+                    const enrichedRequest = await Promise.all(
+                        batch.map(async (filePath) => {
+                            const info = planedScript[filePath];
+
+                            const fileCode =
+                                info.action === "modify"
+                                    ? await this.fileCodeProvider(filePath, projectId)
+                                    : null;
+
+                            return {
+                                task: info.action,
+                                targetFile: filePath,
+                                architecturalResponsibilities: info.responsibilities,
+                                constraints: info.constraints ?? [],
+                                existingFileContent: fileCode
+                            };
+                        })
+                    );
+
+                    return enrichedRequest
+                })
+            );
+
+            const enrichedRequests = process;
+
+            for (let i = 0; i < enrichedRequests.length; i++) {
+
+                const processMap = new Map<string, GenerationRequest>();
+
+                for (const req of enrichedRequests[i]) {
+
+
+                    const tempProcessId = processIdProvider();
+                    processMap.set(tempProcessId, req);
+                    this.pushToUser(
+                        `🛠️ ${req.task === "create" ? "Creating" : "Modifying"}: ${req.targetFile} • ${req.architecturalResponsibilities}`,
+                        projectId,
+                        userId,
+                        tempProcessId,
+                        "render"
+                    );
                 }
-                parentFiles.push({ path: filePath, content: fileCode, action: action });
-
-
-                this.pushToUser(
-                    `🛠️ ${action === "create" ? "Creating" : "Modifying"}: ${filePath} • ${info.responsibilities}`,
-                    projectId,
-                    userId,
-                    tempProcessId,
-                    "render"
-                );
 
                 const systemPrompt = codeGenPrompt;
 
                 const userMessage = `
                                     You are a Principal-Level Senior React + TypeScript Architect.
 
-                                    Your task is to ${action.toUpperCase()} a file with ABSOLUTE correctness.
-                                    Any TypeScript error, invalid import, broken JSX, or invalid JSON is a FAILURE.
-
                                     ========================
-                                    TASK REQUEST
+                                    FILE GENERATION TASKS
                                     ========================
-                                    Action: ${action}
-                                    Target File: ${filePath}
+                                    You must generate code for EACH task listed below.
 
-                                    ARCHITECTURAL RESPONSIBILITIES (INTENT — DO NOT REINTERPRET)
-                                    ${info.responsibilities.join("\n")}
+                                    Each task represents ONE file that must be created or modified.
 
-                                    ${info.constraints?.length ? `
-                                    CONSTRAINTS (MANDATORY)
-                                    ${info.constraints.join("\n")}
-                                    ` : ""}
+                                    For every task:
+                                    - Follow the architecturalResponsibilities exactly
+                                    - Respect all constraints
+                                    - If task = "modify", rewrite the FULL file using existingFileContent as the base
+                                    - If task = "create", generate a complete new file
 
-                                    ========================
-                                    ALLOWED IMPORTS (SOURCE OF TRUTH)
-                                    ========================
-                                    You may ONLY import from the following files and ONLY the listed exports.
+                                    Tasks:
+                                    ${JSON.stringify(enrichedRequests[i], null, 2)}
 
-                                    ${allowedImportsContext}
+                                    IMPORTANT:
+                                    You MUST generate ONE output object for EACH task above.
 
+                                    The number of output files MUST match the number of tasks.
+
+                                    Return them in the same order.
                                     ========================
                                     PLANNED FILE ROLES
                                     ========================
@@ -245,16 +283,10 @@ export default class ArchForge {
 
                                     ${plannedFilesContext}
 
-                                    ${fileCode ? `
                                     ========================
-                                    EXISTING FILE CONTENT
+                                    ALLOWED IMPORTS
                                     ========================
-                                    This file already exists.
-                                    You MUST return the FULL rewritten file with changes applied.
-                                    DO NOT return diffs or partial snippets.
-
-                                    ${fileCode}
-                                    ` : ""}
+                                    ${allowedImportsContext}
 
                                     ========================
                                     UI DESIGN FREEDOM (TASK-SPECIFIC)
@@ -303,32 +335,57 @@ export default class ArchForge {
                                     NO extra text.
 
                                     Schema:
-                                    {
+                                    [{
                                       "fileName": "ExactFileName.tsx",
                                       "path": "src/relative/path/ExactFileName.tsx",
                                       "content": "FULL FILE CONTENT AS A JSON STRING"
-                                    }
+                                    }, so on..]
+                                    Note: you have to give Array of object that is as above format
 
                                     ========================
                                     JSON SAFETY (CRITICAL)
                                     ========================
-                                    - Escape all newlines as \\n
-                                    - Escape all double quotes as \\"
-                                    - No trailing commas
-                                    - Output MUST be parseable by JSON.parse()
+                                    Return ONLY valid JSON.
+
+                                    Rules:
+                                    - The response MUST contain JSON only.
+                                    - Do NOT include markdown.
+                                    - Do NOT include explanations or extra text.
+                                    - Do NOT include comments.
+                                    - The output MUST start with [ and end with ].
+                                    - Each object in the array must follow the schema exactly.
+                                    - Do NOT include trailing commas.
+                                    - Ensure the JSON is valid and parseable by JSON.parse().
+                                                
+                                    Schema:
+                                                
+                                    [
+                                      {
+                                        "fileName": "ExactFileName.tsx",
+                                        "path": "src/relative/path/ExactFileName.tsx",
+                                        "content": "FULL FILE CONTENT"
+                                      }
+                                    ]
 
                                     ========================
                                     FINAL VERIFICATION (DO NOT SKIP)
                                     ========================
-                                    ✓ TypeScript strict mode passes
-                                    ✓ Imports resolve ONLY from ALLOWED IMPORTS
-                                    ✓ JSX is valid
-                                    ✓ React Hooks rules are respected
-                                    ✓ No new exports unless explicitly required
-                                    ✓ No new props unless listed in inputs
-                                    ✓ JSON output is valid
+                                    Before returning the response, verify the following:
 
-                                    If ANY check fails, FIX IT before outputting.
+                                    1. The output is valid JSON.
+                                    2. The JSON array contains exactly one object for each requested task.
+                                    3. Each object strictly follows the required schema.
+                                    4. The "path" matches the requested target file.
+                                    5. The "fileName" matches the file name in the path.
+                                    6. The "content" field contains the complete file code.
+                                    7. The generated code compiles in React (Vite) with TypeScript strict mode.
+                                    8. JSX syntax is valid.
+                                    9. React Hooks rules are respected.
+                                    10. Imports only reference allowed files.
+                                    11. No unused imports, variables, or props exist.
+                                    12. No TODOs, console logs, or commented-out code remain.
+                                                
+                                    If any rule fails, FIX the issue before producing the final JSON output.
                                 `;
 
                 const messages: ChatCompletionMessageParam[] = [
@@ -367,34 +424,57 @@ export default class ArchForge {
                         raw = completion.choices?.[0]?.message?.content || "{}";
                     }
 
+                    let generatedCodeArray: ArchProjectCode[] = [];
 
-                    const generatedCode: ArchProjectCode = JSON.parse(raw);
+                    try {
+                        raw = this.extractJSONArray(raw);
+                        generatedCodeArray = JSON.parse(raw);
+                    } catch (err) {
+                        console.error("Invalid JSON from model:", raw);
+                        return null;
+                    }
 
                     // await this.handleMissingImports(generatedCode, planedScript);
 
                     // planKeys = Object.keys(planedScript);
 
-                    this.pushToUser("", projectId, userId, tempProcessId, "render");
+                    for (const generatedCode of generatedCodeArray) {
+                        const tempProcessId = processIdProvider();
 
-                    archSSEmanager.send(jobId, "file", {
-                        ...generatedCode,
-                        projectId
-                    });
+                        this.pushToUser("", projectId, userId, tempProcessId, "render");
 
-                    enrichedFiles.push({ path: generatedCode.path, content: generatedCode.content, action });
+                        archSSEmanager.send(jobId, "file", {
+                            ...generatedCode,
+                            projectId
+                        });
+
+                        const request = enrichedRequests[i].find(r => r.targetFile === generatedCode.path);
+
+                        enrichedFiles.push({
+                            path: generatedCode.path,
+                            content: generatedCode.content,
+                            action: request?.task ?? "create"
+                        });
+                        this.pushToUser("", projectId, userId, tempProcessId, "complete");
+                    }
 
                 } catch (error) {
                     console.error("Error:", error);
                 } finally {
-                    this.pushToUser(
-                        `🛠️ ${action === "create" ? "Creating" : "Modifying"}: ${filePath} • ${info.responsibilities}`,
-                        projectId,
-                        userId,
-                        tempProcessId,
-                        "complete"
-                    );
+                    for (const [processId, req] of processMap) {
+
+                        this.pushToUser(
+                            `🛠️ ${req.task === "create" ? "Creating" : "Modifying"}: ${req.targetFile} • ${req.architecturalResponsibilities}`,
+                            projectId,
+                            userId,
+                            processId,
+                            "complete"
+                        );
+                    }
                 }
             }
+
+
 
             const snapprocess = processIdProvider()
             this.pushToUser(
@@ -758,6 +838,13 @@ Ensure no contradictions between responsibilities and constraints.`;
             Exports: ${f.context.exports.join(", ")}`;
         }).join("\n---\n");
     };
+
+    private static extractJSONArray(str: string) {
+        const start = str.indexOf("[");
+        const end = str.lastIndexOf("]");
+        if (start === -1 || end === -1) return str;
+        return str.slice(start, end + 1);
+    }
 
 }
 
