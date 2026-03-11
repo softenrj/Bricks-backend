@@ -429,34 +429,34 @@ export default class ArchForge {
                     try {
                         raw = this.extractJSONArray(raw);
                         generatedCodeArray = JSON.parse(raw);
+
+                        for (const generatedCode of generatedCodeArray) {
+                            const tempProcessId = processIdProvider();
+
+                            this.pushToUser("", projectId, userId, tempProcessId, "render");
+
+                            archSSEmanager.send(jobId, "file", {
+                                ...generatedCode,
+                                projectId
+                            });
+
+                            const request = enrichedRequests[i].find(r => r.targetFile === generatedCode.path);
+
+                            enrichedFiles.push({
+                                path: generatedCode.path,
+                                content: generatedCode.content,
+                                action: request?.task ?? "create"
+                            });
+                            this.pushToUser("", projectId, userId, tempProcessId, "complete");
+                        }
+
                     } catch (err) {
                         console.error("Invalid JSON from model:", raw);
-                        return null;
                     }
 
                     // await this.handleMissingImports(generatedCode, planedScript);
 
                     // planKeys = Object.keys(planedScript);
-
-                    for (const generatedCode of generatedCodeArray) {
-                        const tempProcessId = processIdProvider();
-
-                        this.pushToUser("", projectId, userId, tempProcessId, "render");
-
-                        archSSEmanager.send(jobId, "file", {
-                            ...generatedCode,
-                            projectId
-                        });
-
-                        const request = enrichedRequests[i].find(r => r.targetFile === generatedCode.path);
-
-                        enrichedFiles.push({
-                            path: generatedCode.path,
-                            content: generatedCode.content,
-                            action: request?.task ?? "create"
-                        });
-                        this.pushToUser("", projectId, userId, tempProcessId, "complete");
-                    }
 
                 } catch (error) {
                     console.error("Error:", error);

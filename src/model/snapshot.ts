@@ -22,7 +22,7 @@ const snapshotSchema = new mongoose.Schema<ISnapshot>({
     projectId: { type: mongoose.Schema.ObjectId, required: true, ref: "Project", index: true },
     parentSnapshot: { type: mongoose.Schema.ObjectId, required: false, index: true },
     status: { type: String, enum: Object.values(snapshotEnum), required: true, default: snapshotEnum.DRAFT },
-    expiresAt: { type: Date, required: true, default: () => new Date(Date.now() + 60 * 60 * 1000) } // 15 min
+    expiresAt: { type: Date, required: true, default: () => new Date(Date.now() + 30 * 60 * 1000) } // 30 min
 }, { timestamps: true })
 
 export const Snapshot = mongoose.model<ISnapshot>("snapshots",snapshotSchema);
