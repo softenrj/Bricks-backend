@@ -196,7 +196,7 @@ export default class ArchForge {
 
             // ---------------------- Batch Process ---------------
 
-            const batchSize = 3;
+            const batchSize = 2;
             const batches: string[][] = [];
 
             for (let i = 0; i < planKeys.length; i += batchSize) {
