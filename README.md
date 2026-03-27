@@ -173,6 +173,11 @@ npm test
 yarn test
 ```
 
+### 6. Docker container Run
+ ```bash
+ docker run --rm -p 8000:8000 --env-file ./.env.dev bricks-backend:1.0.0
+```
+
 ---
 
 ## 🔐 Security & Best Practices
