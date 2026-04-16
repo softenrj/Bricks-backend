@@ -642,8 +642,7 @@ const userMessage = `
     }
 
     // #region ------ AI planner ------
-
-    private static async archProjectPlanner(
+private static async archProjectPlanner(
         fileContexts: ArchFileContext[],
         projectTree: string,
         userPrompt: string,
@@ -655,8 +654,8 @@ const userMessage = `
             this.pushToUser("🧠 Analyzing project and planning required changes...", projectId, userId, processId, "render");
             const optimizedContext = this.formatContextForPlanner(fileContexts);
 
-            // ENHANCED: Force classification and rule enforcement
-            const enhancedSystemPrompt = `You are a Senior Software Architect and React/TypeScript expert.
+            // ENHANCED: Merged functional architecture with extreme UI/UX mandates
+            const enhancedSystemPrompt = `You are a Principal-Level Software Architect AND Elite Product Designer.
 
 ========================
 INPUT DATA
@@ -666,108 +665,35 @@ INPUT DATA
 3. User Request: "${userPrompt}"
 
 ========================
-MANDATORY: CLASSIFY THE REQUEST FIRST
+GLOBAL DESIGN MANDATE (CRITICAL & NON-NEGOTIABLE)
 ========================
-Read the user request CAREFULLY and classify it as ONE type:
-
-**"ui-only"** (VISUAL DESIGN):
-- Keywords: beautiful, animated, modern, clean, aesthetic, design, styling, colors, spacing, typography, layout, hero section, top section, visual hierarchy, wow, premium, attractive, impressive, smooth animations, hover effects
-- Example: "make it beautiful", "add animations", "improve the design", "redesign the hero section"
-
-**"architectural"** (NEW STRUCTURE):
-- Keywords: new page, new route, new screen, navigation, multiple pages, section, todo app (if it implies a new page)
-- Example: "add a new page", "create a todo page", "add routing"
-
-**"behavioral"** (LOGIC/STATE):
-- Keywords: when, on click, form, state, calculation, validation, logic, functionality, CRUD, show message, success message, button click
-- Example: "when clicking the button", "add form validation", "calculate total", "manage user input"
+Whenever the user requests new UI components, pages, or visual improvements (e.g., "beautiful", "modern"), you MUST explicitly inject premium styling responsibilities into the output. 
+- ALWAYS include directives for modern, high-end design (e.g., "Implement premium glassmorphism UI", "Use Tailwind for a polished dark-mode aesthetic", "Add Framer Motion for smooth layout transitions").
+- NEVER output barebones functional HTML. Functionality and stunning UI must coexist.
 
 ========================
-DIFFERENT RULES FOR EACH CLASSIFICATION
+MANDATORY: CLASSIFY THE REQUEST
 ========================
+Classify the user request into ONE primary type to determine the structural approach, but remember the Global Design Mandate applies to ALL of them:
 
-=== RULES FOR "ui-only" REQUESTS ===
-1. ONLY modify existing files (App.tsx or existing component) - do NOT create new files.
-2. NO new state (useState, useEffect, useReducer).
-3. NO routing changes.
-4. NO conditional rendering based on flags or state.
-5. Focus ONLY on: animations, spacing, typography, colors, gradients, layout, hover effects.
-6. Do NOT introduce global style changes (like index.css) unless the user explicitly asks for a global theme.
+**"ui-only"** (VISUAL REFINEMENT):
+- Keywords: beautiful, animated, modern, aesthetic, redesign.
+- Rule: Modify existing files only. Focus heavily on animations, spacing, colors, and layout.
 
-=== RULES FOR "architectural" REQUESTS ===
-1. CREATE new files for new pages/components.
-2. MODIFY existing files for wiring (routing, imports).
-3. Use appropriate state management for the feature.
-4. Keep routing minimal and clean.
-5. Structure files logically (pages/, components/).
-6. Respect existing architecture patterns.
+**"architectural"** (NEW PAGES / COMPLEX FEATURES):
+- Keywords: new page, todo app, new screen, routing.
+- Rule: Create necessary files and wire routing. YOU MUST ALSO include premium UI responsibilities for every new file created.
 
-=== RULES FOR "behavioral" REQUESTS ===
-1. Modify or create components for the functionality.
-2. Add necessary state and effects.
-3. Follow React best practices (cleanup, dependencies).
-4. No unnecessary UI polish (unless requested).
-5. Focus on correctness and functionality.
+**"behavioral"** (LOGIC / STATE + UX):
+- Keywords: on click, form, calculate, functionality.
+- Rule: Add logic and state. Ensure any UI feedback (success messages, loaders) includes smooth transitions and polished styling.
 
 ========================
-CHECK FOR CONTRADICTIONS (CRITICAL)
-========================
-BEFORE outputting, verify:
-1. Responsibilities MUST match constraints.
-2. If the request is UI-only, do NOT create new files.
-3. If the request is architectural, ensure new page files are created.
-4. Constraints must NOT forbid what responsibilities require (e.g., if you need to show a message on click, you must allow state and conditional rendering).
-
-========================
-EXAMPLE OUTPUTS
+EXAMPLE OUTPUTS (Notice how styling is injected everywhere)
 ========================
 
-=== EXAMPLE 1: UI-only request ===
-Request: "Make this page more beautiful and modern with smooth animations"
-Output:
-{
-  "src/App.tsx": {
-    "description": "Enhance existing UI with smooth animations and modern design",
-    "action": "modify",
-    "role": "app-entry",
-    "responsibilities": [
-      "Add smooth entrance animations to main content",
-      "Update color scheme to a modern palette",
-      "Improve spacing and typography for better visual hierarchy",
-      "Add subtle hover effects to interactive elements"
-    ],
-    "constraints": [
-      "Do not introduce new state or effects",
-      "Do not change routing or create new pages",
-      "Do not add conditional rendering logic",
-      "Only modify styles and animations in this file"
-    ]
-  }
-}
-
-=== EXAMPLE 2: Behavioral request ===
-Request: "When clicking the button, show a success message with animation"
-Output:
-{
-  "src/App.tsx": {
-    "description": "Add button click handler to show animated success message",
-    "action": "modify",
-    "role": "app-entry",
-    "responsibilities": [
-      "Add state to track whether button is clicked",
-      "Conditionally render success message when button is clicked",
-      "Animate the success message entrance and exit",
-      "Style the success message appropriately"
-    ],
-    "constraints": [
-      "Do not change routing or create new pages",
-      "Keep the animation lightweight and non-intrusive"
-    ]
-  }
-}
-
-=== EXAMPLE 3: Architectural request ===
-Request: "Add a new page to build a fictional todo app"
+=== EXAMPLE 1: Architectural + Beautiful request ===
+Request: "Add a new page to build a super beautiful fictional todo app"
 Output:
 {
   "src/App.tsx": {
@@ -776,26 +702,21 @@ Output:
     "role": "app-entry",
     "responsibilities": [
       "Add route for Todo page",
-      "Import and include TodoPage component"
+      "Ensure navigation transitions smoothly to the new route"
     ],
-    "constraints": [
-      "Keep existing routes unchanged",
-      "No visual redesign of other pages"
-    ]
+    "constraints": ["Keep existing routes intact"]
   },
   "src/pages/TodoPage.tsx": {
-    "description": "Create fictional Todo page with mock functionality",
+    "description": "Create premium Todo page with mock functionality",
     "action": "create",
     "role": "page",
     "responsibilities": [
-      "Render todo list UI with add/remove functionality",
-      "Manage todo items with local component state",
-      "Provide clear user feedback for actions"
+      "Render a stunning, modern Todo list UI using Tailwind CSS",
+      "Implement a premium dark aesthetic with glassmorphic cards and polished typography",
+      "Add Framer Motion animations for adding/removing items (e.g., smooth layout shifting)",
+      "Manage todo items with local component state for full functionality"
     ],
-    "constraints": [
-      "No backend integration required",
-      "Use mock data or local state only"
-    ]
+    "constraints": ["No backend integration required"]
   }
 }
 
@@ -804,37 +725,27 @@ NOW ANALYZE THE CURRENT REQUEST
 ========================
 Request: "${userPrompt}"
 
-Classification Reasoning:
-[Think step by step about the keywords and intent]
-
-Final Classification: [ui-only|architectural|behavioral]
-
-Based on this classification, apply the appropriate rules above.
-
-========================
-OUTPUT FORMAT (STRICT JSON ONLY)
-========================
-Return ONLY a JSON object mapping file paths to file contracts.
-Ensure no contradictions between responsibilities and constraints.`;
+Output ONLY a strict JSON object mapping file paths to file contracts.
+Ensure functionality is complete AND the UI styling responsibilities are explicitly aggressive and premium.`;
 
             const messages: ChatCompletionMessageParam[] = [
                 { role: "system", content: enhancedSystemPrompt },
                 {
+                    // FIX: Removed the word "MINIMAL" which was killing your design prompt
                     role: "user",
-                    content: `Based on project tree and request, provide MINIMAL plan for: "${userPrompt}"`
+                    content: `Based on the project tree and request, provide a COMPLETE, fully functional, and highly styled plan for: "${userPrompt}"`
                 }
             ];
 
             const completion = await AI_MODULE.chat.completions.create({
                 model: "llama-3.1-8b-instant",
                 messages: messages,
-                temperature: 0.1, // Very low temperature to prevent creativity
+                temperature: 0.1, // Keep this low so JSON formatting is strict, the prompt now handles the creativity.
                 response_format: { type: "json_object" }
             });
 
             const content = completion.choices[0]?.message?.content || "{}";
             const plan: ProjectPlan = JSON.parse(content);
-
 
             this.pushToUser("", projectId, userId, processId, "complete");
             return plan;

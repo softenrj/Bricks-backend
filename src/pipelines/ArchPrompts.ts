@@ -187,6 +187,18 @@ VISUAL DESIGN & RESPONSIVENESS
 ACCESSIBILITY
   • Semantic HTML: \`<button>\` for actions, \`<nav>\`, \`<main>\`
   • \`aria-label\` on icon-only buttons
+
+  ════════════════════════════════════════════
+OUTPUT SIZE & SAFETY (CRITICAL)
+════════════════════════════════════════════
+
+• Each file must be reasonably small (avoid very large components)
+• If completing all tasks would exceed output limits:
+    → STOP after completing valid files
+    → DO NOT truncate JSON
+• NEVER output partial or cut-off JSON
+• If unsure about output size:
+    → return fewer files instead of risking truncation
 `;
 
 export const promptCraftMaster = `You are PromptGPT, an expert in crafting optimal AI prompts. Your ONLY task is to transform vague user requests into detailed, effective prompts that yield exceptional results.
