@@ -191,7 +191,27 @@ export default class ArchForge {
                 .map(([path, info]) => `- ${path}: role=${info.role}`)
                 .join("\n");
 
-            const parentFiles: snaps[] = [];
+
+            const lagacyCode = new Map<string, string>();
+
+            await Promise.all(planKeys.map(async (key) => {
+                const action = planedScript[key].action;
+
+                if (action === "create") return;
+
+                const code = await this.fileCodeProvider(key, projectId);
+                lagacyCode.set(key, code);
+            }))
+
+            const parentFiles: snaps[] = planKeys.map((key) => {
+                const file = planedScript[key];
+                return {
+                    action: file.action,
+                    content: lagacyCode.has(key) ? lagacyCode.get(key)! : null,
+                    path: key
+                }
+            });
+
             const enrichedFiles: snaps[] = [];
 
             // ---------------------- Batch Process ---------------
@@ -203,24 +223,19 @@ export default class ArchForge {
                 batches.push(planKeys.slice(i, i + batchSize));
             }
 
-            const process = await Promise.all(
+            const enrichedRequests = await Promise.all(
                 batches.map(async (batch) => {
 
                     const enrichedRequest = await Promise.all(
                         batch.map(async (filePath) => {
                             const info = planedScript[filePath];
 
-                            const fileCode =
-                                info.action === "modify"
-                                    ? await this.fileCodeProvider(filePath, projectId)
-                                    : null;
-
                             return {
                                 task: info.action,
                                 targetFile: filePath,
                                 architecturalResponsibilities: info.responsibilities,
                                 constraints: info.constraints ?? [],
-                                existingFileContent: fileCode
+                                existingFileContent: lagacyCode.get(filePath) ?? null
                             };
                         })
                     );
@@ -229,7 +244,6 @@ export default class ArchForge {
                 })
             );
 
-            const enrichedRequests = process;
 
             for (let i = 0; i < enrichedRequests.length; i++) {
 
@@ -251,7 +265,7 @@ export default class ArchForge {
 
                 const systemPrompt = codeGenPrompt;
 
-                const userMessage = `
+const userMessage = `
                                     You are a Principal-Level Senior React + TypeScript Architect.
 
                                     ========================
@@ -424,11 +438,12 @@ export default class ArchForge {
                         raw = completion.choices?.[0]?.message?.content || "{}";
                     }
 
+        
                     let generatedCodeArray: ArchProjectCode[] = [];
 
+
                     try {
-                        raw = this.extractJSONArray(raw);
-                        generatedCodeArray = JSON.parse(raw);
+                        generatedCodeArray = this.extractAndParseJSON(raw);
 
                         for (const generatedCode of generatedCodeArray) {
                             const tempProcessId = processIdProvider();
@@ -839,11 +854,33 @@ Ensure no contradictions between responsibilities and constraints.`;
         }).join("\n---\n");
     };
 
-    private static extractJSONArray(str: string) {
-        const start = str.indexOf("[");
-        const end = str.lastIndexOf("]");
-        if (start === -1 || end === -1) return str;
-        return str.slice(start, end + 1);
+    private static extractAndParseJSON(str: string): any[] {
+        // Clean out any Non-Breaking Spaces the LLM
+        const cleanedStr = str.replace(/\u00A0/g, " ");
+
+        const startArr = cleanedStr.indexOf("[");
+        const endArr = cleanedStr.lastIndexOf("]");
+        const startObj = cleanedStr.indexOf("{");
+        const endObj = cleanedStr.lastIndexOf("}");
+
+        try {
+            if (startArr !== -1 && endArr !== -1 && (startArr < startObj || startObj === -1)) {
+                const arrStr = cleanedStr.slice(startArr, endArr + 1);
+                return JSON.parse(arrStr);
+            }
+
+            else if (startObj !== -1 && endObj !== -1) {
+                const objStr = cleanedStr.slice(startObj, endObj + 1);
+                const parsedObj = JSON.parse(objStr);
+ 
+                return [parsedObj];
+            }
+        } catch (e) {
+            console.error("Failed to parse LLM JSON:", e, "Raw output:", cleanedStr);
+            return [];
+        }
+
+        return [];
     }
 
 }
