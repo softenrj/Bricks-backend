@@ -26,7 +26,7 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // Logger
 app.use(morgan("dev"));
 app.use(compression({
-    filter: (req,res) => {
+    filter: (req, res) => {
         if (req.headers.accept?.includes("text/event-stream")) {
             return false;
         }
