@@ -1,9 +1,12 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import rateLimit from "express-rate-limit";
 
 export const rateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
-  max: 5000,                 
-  standardHeaders: true, 
+  windowMs: 15 * 60 * 1000,
+  max: 5000,
+  standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,

@@ -1,13 +1,16 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import mongoose, { Document, Schema } from "mongoose";
 
 export enum WebTech {
   VITE = "VITE",
-  NEXT = "NEXT" // future reference
+  NEXT = "NEXT", // future reference
 }
 
 export enum TechLanguage {
   JS = "JS",
-  TS = "TS"
+  TS = "TS",
 }
 
 export interface IProject {
@@ -32,9 +35,9 @@ const ProjectSchema = new Schema<IProject>(
     tech_language: { type: String, enum: Object.values(TechLanguage), required: true },
     archived: { type: Boolean, default: false },
     starred: { type: Boolean, default: false },
-    markDelete: { type: Boolean, default: false }
+    markDelete: { type: Boolean, default: false },
   },
-  { timestamps: true } 
+  { timestamps: true }
 );
 
 export const Project = mongoose.model<IProject>("Project", ProjectSchema);

@@ -1,15 +1,18 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import { Google_GenAI } from "../config/groqSdkConfig.js";
 
 export class FullCodeCompletion {
-    public static async getCodeCompletion(
-        userCode: string,
-        fileName: string,
-        fileLanguage: string
-    ): Promise<string> {
-        try {
-            if (!userCode.trim()) return "";
+  public static async getCodeCompletion(
+    userCode: string,
+    fileName: string,
+    fileLanguage: string
+  ): Promise<string> {
+    try {
+      if (!userCode.trim()) return "";
 
-            const systemPrompt = `
+      const systemPrompt = `
 You are an expert AI code generation assistant. Your sole purpose is to take the user's code, fix, improve, or complete it into a single, production-ready file.
 
 FILE CONTEXT:
@@ -31,26 +34,23 @@ STRICT INSTRUCTIONS:
 Start generating the code immediately.
       `.trim();
 
-            const response = await Google_GenAI.models.generateContent({
-                model: "gemini-2.5-flash",
-                contents: [
-                    {
-                        role: "user",
-                        parts: [
-                            { text: systemPrompt },
-                            { text: userCode },
-                        ],
-                    },
-                ],
-            });
+      const response = await Google_GenAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: systemPrompt }, { text: userCode }],
+          },
+        ],
+      });
 
-            const text = response?.text?.trim() || "";
-            const cleaned = text.replace(/^(```[\w]*\n)|(\n```)$|(```)$/g, "").trim();
+      const text = response?.text?.trim() || "";
+      const cleaned = text.replace(/^(```[\w]*\n)|(\n```)$|(```)$/g, "").trim();
 
-            return cleaned;
-        } catch (error) {
-            console.error("Error in CodeCompletion.getCodeCompletion:", error);
-            return "";
-        }
+      return cleaned;
+    } catch (error) {
+      console.error("Error in CodeCompletion.getCodeCompletion:", error);
+      return "";
     }
+  }
 }

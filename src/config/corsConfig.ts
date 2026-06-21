@@ -1,10 +1,10 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import { Application } from "express";
 import cors from "cors";
 
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://bricks-three-rose.vercel.app"
-];
+const allowedOrigins = ["http://localhost:3000", "https://bricks-three-rose.vercel.app"];
 
 export const corsConfig = (app: Application) => {
   app.use(

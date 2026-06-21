@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 export const folderStructurePrompt = `
 You are a Senior Software Architect and React/TypeScript expert.
 
@@ -243,4 +246,4 @@ Add:
 - Use natural, conversational language
 - Maintain original intent
 
-Now enhance this prompt for maximum effectiveness:`
+Now enhance this prompt for maximum effectiveness:`;

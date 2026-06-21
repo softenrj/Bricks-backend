@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import { Router } from "express";
 import { getChallenge, verifyRequest } from "../controller/adminController.js";
 

@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import mongoose from "mongoose";
 import { UserStats, IUserStats } from "../model/userStats.js";
 import { AchievementEnum } from "../model/achievements.js";
@@ -8,9 +11,7 @@ import { AchievementService } from "./Achievements.js";
  * @param userId The ID of the user.
  * @returns The UserStats document.
  */
-export async function ensureUserStats(
-  userId: mongoose.Types.ObjectId
-): Promise<IUserStats> {
+export async function ensureUserStats(userId: mongoose.Types.ObjectId): Promise<IUserStats> {
   let stats = await UserStats.findOne({ userId });
   if (!stats) {
     stats = await UserStats.create({ userId });
@@ -21,9 +22,7 @@ export async function ensureUserStats(
 /**
  * @param userId The ID of the user.
  */
-export async function streakEngine(
-  userId: mongoose.Types.ObjectId
-): Promise<void> {
+export async function streakEngine(userId: mongoose.Types.ObjectId): Promise<void> {
   try {
     const today = new Date();
     const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
@@ -38,13 +37,10 @@ export async function streakEngine(
         {
           $set: {
             isYesterday: {
-              $eq: [
-                "$lastCountedStreak",
-                { $add: [todayUTC, -24 * 60 * 60 * 1000] }
-              ]
+              $eq: ["$lastCountedStreak", { $add: [todayUTC, -24 * 60 * 60 * 1000] }],
             },
-            isCountedToday: { $eq: ["$lastCountedStreak", todayUTC] }
-          }
+            isCountedToday: { $eq: ["$lastCountedStreak", todayUTC] },
+          },
         },
         {
           $set: {
@@ -67,29 +63,27 @@ export async function streakEngine(
                 if: "$isCountedToday",
                 then: "$reputation",
                 else: {
-                  $min: [
-                    { $add: ["$reputation", REPUTATION_INCREASE] },
-                    REPUTATION_CAP
-                  ]
-                }
-              }
+                  $min: [{ $add: ["$reputation", REPUTATION_INCREASE] }, REPUTATION_CAP],
+                },
+              },
             },
 
             lastCountedStreak: {
               $cond: {
                 if: "$isCountedToday",
                 then: "$lastCountedStreak",
-                else: todayUTC
-              }
+                else: todayUTC,
+              },
             },
           },
         },
         {
           $set: {
-            maxStreak: { $max: ["$maxStreak", "$streak"] }
-          }
-        }
-      ], { new: true }
+            maxStreak: { $max: ["$maxStreak", "$streak"] },
+          },
+        },
+      ],
+      { new: true }
     );
 
     if (stats && stats.streak === 10) await AchievementService(AchievementEnum.RF, userId);
@@ -104,23 +98,14 @@ export async function streakEngine(
  * @param type 1 for star, 0 for unstar.
  * @param userId The ID of the user.
  */
-export async function starStats(
-  type: 0 | 1,
-  userId: mongoose.Types.ObjectId
-): Promise<void> {
+export async function starStats(type: 0 | 1, userId: mongoose.Types.ObjectId): Promise<void> {
   try {
     await ensureUserStats(userId);
 
     if (type === 1) {
-      await UserStats.updateOne(
-        { userId },
-        { $inc: { starMarked: 1 } }
-      );
+      await UserStats.updateOne({ userId }, { $inc: { starMarked: 1 } });
     } else {
-      await UserStats.updateOne(
-        { userId, starMarked: { $gt: 0 } },
-        { $inc: { starMarked: -1 } }
-      );
+      await UserStats.updateOne({ userId, starMarked: { $gt: 0 } }, { $inc: { starMarked: -1 } });
     }
   } catch (err) {
     console.error("StarStatsEngine Error:", err);
@@ -132,10 +117,7 @@ export async function starStats(
  * @param type 1 for archive, 0 for unarchive.
  * @param userId The ID of the user.
  */
-export async function archivedStats(
-  type: 0 | 1,
-  userId: mongoose.Types.ObjectId
-): Promise<void> {
+export async function archivedStats(type: 0 | 1, userId: mongoose.Types.ObjectId): Promise<void> {
   try {
     await ensureUserStats(userId);
 
@@ -148,10 +130,7 @@ export async function archivedStats(
 
       if (stats && stats.archived === 5) await AchievementService(AchievementEnum.FFA, userId);
     } else {
-      await UserStats.updateOne(
-        { userId, archived: { $gt: 0 } },
-        { $inc: { archived: -1 } }
-      );
+      await UserStats.updateOne({ userId, archived: { $gt: 0 } }, { $inc: { archived: -1 } });
     }
   } catch (err) {
     console.error("ArchivedStatsEngine Error:", err);
@@ -163,10 +142,7 @@ export async function archivedStats(
  * @param type 1 for creation, 0 for deletion.
  * @param userId The ID of the user.
  */
-export async function projectStats(
-  type: 0 | 1,
-  userId: mongoose.Types.ObjectId
-): Promise<void> {
+export async function projectStats(type: 0 | 1, userId: mongoose.Types.ObjectId): Promise<void> {
   try {
     await ensureUserStats(userId);
 
@@ -180,10 +156,7 @@ export async function projectStats(
       if (stats && stats.projects === 5) await AchievementService(AchievementEnum.QB, userId);
       if (stats && stats.projects === 25) await AchievementService(AchievementEnum.LOF, userId);
     } else {
-      await UserStats.updateOne(
-        { userId, projects: { $gt: 0 } },
-        { $inc: { projects: -1 } }
-      );
+      await UserStats.updateOne({ userId, projects: { $gt: 0 } }, { $inc: { projects: -1 } });
     }
   } catch (err) {
     console.error("ProjectStatsEngine Error:", err);

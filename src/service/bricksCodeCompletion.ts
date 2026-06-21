@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import { AI_MODULE } from "../config/groqSdkConfig.js";
 import { ChatCompletionMessageParam } from "groq-sdk/resources/chat.mjs";
 

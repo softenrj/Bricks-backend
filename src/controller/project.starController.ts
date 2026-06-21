@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import { Request, Response } from "express";
 import { Project } from "../model/project.js";
 import { sendResponse } from "../types/apiResponse.js";
@@ -6,87 +9,105 @@ import { BrickHistoryTypeEnum } from "../model/BricksHistory.js";
 import mongoose from "mongoose";
 import { starStats } from "../service/UserStatsService.js";
 
-
-
 // Class Responsible for Project Archieve or UnArchieve //
 class ProjectStarHandler {
+  /**
+   *
+   * @param req
+   * @param res
+   * @returns
+   */
+  public static markStar = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const projectId = req.params.projectId;
+      const userId = req.userId;
 
-    /**
-     * 
-     * @param req 
-     * @param res 
-     * @returns 
-     */
-    public static markStar = async (req: Request, res: Response): Promise<void> => {
-        try {
-            const projectId = req.params.projectId;
-            const userId = req.userId;
+      if (!userId) {
+        sendResponse(res, 401, { success: false, message: "Unauthorized" });
+        return;
+      }
 
-            if (!userId) {
-                sendResponse(res, 401, { success: false, message: "Unauthorized" });
-                return;
-            }
+      if (!projectId) {
+        sendResponse(res, 400, { success: false, message: "Missing or Invalid Project Id" });
+        return;
+      }
 
-            if (!projectId) {
-                sendResponse(res, 400, { success: false, message: "Missing or Invalid Project Id" });
-                return;
-            }
+      const project = await Project.findByIdAndUpdate(projectId, {
+        $set: {
+          starred: true,
+        },
+      });
 
-            const project = await Project.findByIdAndUpdate(projectId, {
-                $set: {
-                    starred: true
-                }
-            })
+      await starStats(1, userId);
 
-            await starStats(1, userId);
+      pushProjectHistory(
+        {
+          userId,
+          projectId: new mongoose.Types.ObjectId(projectId),
+          description: `Project: ${project?.name} marked as starred.`,
+        },
+        BrickHistoryTypeEnum.project
+      );
 
-            pushProjectHistory({ userId, projectId: new mongoose.Types.ObjectId(projectId), description: `Project: ${project?.name} marked as starred.`}, BrickHistoryTypeEnum.project);
-
-            sendResponse(res, 201, { success: true, data: project, message: "Project is Marked Starred" })
-        } catch (error) {
-            console.error("Error while mark project Like:", error);
-            sendResponse(res, 500, { success: false, message: "Internal Server Error" });
-        }
+      sendResponse(res, 201, {
+        success: true,
+        data: project,
+        message: "Project is Marked Starred",
+      });
+    } catch (error) {
+      console.error("Error while mark project Like:", error);
+      sendResponse(res, 500, { success: false, message: "Internal Server Error" });
     }
+  };
 
+  /**
+   *
+   * @param req
+   * @param res
+   * @returns
+   */
+  public static unStar = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const projectId: string = req.params.projectId;
+      const userId = req.userId;
 
-    /**
-     * 
-     * @param req 
-     * @param res 
-     * @returns 
-     */
-    public static unStar = async (req: Request, res: Response): Promise<void> => {
-        try {
-            const projectId: string = req.params.projectId;
-            const userId = req.userId;
+      if (!userId) {
+        sendResponse(res, 401, { success: false, message: "Unauthorized" });
+        return;
+      }
 
-            if (!userId) {
-                sendResponse(res, 401, { success: false, message: "Unauthorized" });
-                return;
-            }
+      if (!projectId) {
+        sendResponse(res, 400, { success: false, message: "Missing or Invalid Project Id" });
+        return;
+      }
 
-            if (!projectId) {
-                sendResponse(res, 400, { success: false, message: "Missing or Invalid Project Id" });
-                return;
-            }
+      const project = await Project.findByIdAndUpdate(projectId, {
+        $set: {
+          starred: false,
+        },
+      });
 
-            const project = await Project.findByIdAndUpdate(projectId, {
-                $set: {
-                    starred: false
-                }
-            })
+      await starStats(0, userId);
 
-            await starStats(0, userId);
+      modifyProjectHistory(
+        {
+          userId,
+          projectId: new mongoose.Types.ObjectId(projectId),
+          description: `Project: ${project?.name} marked as starred.`,
+        },
+        BrickHistoryTypeEnum.project
+      );
 
-            modifyProjectHistory({ userId, projectId: new mongoose.Types.ObjectId(projectId), description: `Project: ${project?.name} marked as starred.`}, BrickHistoryTypeEnum.project);
-
-            sendResponse(res, 201, { success: true, data: project, message: "Project is Marked Starred" })
-        } catch (error) {
-            console.error("Error while mark project UnLike:", error);
-            sendResponse(res, 500, { success: false, message: "Internal Server Error" });
-        }
+      sendResponse(res, 201, {
+        success: true,
+        data: project,
+        message: "Project is Marked Starred",
+      });
+    } catch (error) {
+      console.error("Error while mark project UnLike:", error);
+      sendResponse(res, 500, { success: false, message: "Internal Server Error" });
     }
+  };
 }
 
 export default ProjectStarHandler;

@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import dotenv from "dotenv";
 import path from "path";
 
@@ -6,8 +9,8 @@ const envFile =
   process.env.NODE_ENV === "production"
     ? ".env.prod"
     : process.env.NODE_ENV === "test"
-    ? ".env.test"
-    : ".env.dev";
+      ? ".env.test"
+      : ".env.dev";
 
 // Load env file
 export const env = dotenv.config({ path: path.resolve(process.cwd(), envFile) });

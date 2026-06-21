@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import Groq from "groq-sdk";
 import { GoogleGenAI } from "@google/genai";
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });

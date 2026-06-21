@@ -1,8 +1,10 @@
-import { NextFunction, Request, Response } from 'express'
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
 
-const catchAsyncErrors =
-  (theFunc: any) => (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(theFunc(req, res, next)).catch(next)
-  }
+import { NextFunction, Request, Response } from "express";
 
-export default catchAsyncErrors
+const catchAsyncErrors = (theFunc: any) => (req: Request, res: Response, next: NextFunction) => {
+  Promise.resolve(theFunc(req, res, next)).catch(next);
+};
+
+export default catchAsyncErrors;

@@ -1,5 +1,9 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import request from "supertest";
 import app from "../app.js";
+import { describe, it } from "node:test";
 
 describe("Health Check Endpoint", () => {
   it("should return 200 and status ok", async () => {

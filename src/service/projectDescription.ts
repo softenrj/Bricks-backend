@@ -1,6 +1,12 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import { AI_MODULE } from "../config/groqSdkConfig.js";
 
-export const __projectDescription = async (_projectName: string, __projectDes: string): Promise<string> => {
+export const __projectDescription = async (
+  _projectName: string,
+  __projectDes: string
+): Promise<string> => {
   try {
     const response = await AI_MODULE.chat.completions.create({
       model: "llama-3.1-8b-instant",
@@ -23,7 +29,7 @@ export const __projectDescription = async (_projectName: string, __projectDes: s
       max_tokens: 80,
     });
 
-    const _des = response?.choices?.[0]?.message?.content?.replace(/^["'`]+|["'`]+$/g, '')?.trim();
+    const _des = response?.choices?.[0]?.message?.content?.replace(/^["'`]+|["'`]+$/g, "")?.trim();
     const fallback = __projectDes || _projectName;
     return _des && _des.length > 0 ? _des : fallback;
   } catch (error) {

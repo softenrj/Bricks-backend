@@ -1,9 +1,12 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import mongoose, { Document, Schema } from "mongoose";
 
 export enum FSTYPE {
   FOLDER = "folder",
   FILE = "file",
-  IMAGE = "image"
+  IMAGE = "image",
 }
 
 export interface IProjectFile extends Document {
@@ -19,7 +22,6 @@ export interface IProjectFile extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
-
 
 export interface ProjectContextNode {
   _id: any;
@@ -46,14 +48,13 @@ const ProjectFileSchema = new Schema<IProjectFile>(
     type: {
       type: String,
       enum: Object.values(FSTYPE),
-      required: true
+      required: true,
     },
     content: { type: String },
     version: { type: Number, default: 1 },
-    isDefault: { type: Boolean, default: false }
+    isDefault: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
-
 
 export const ProjectFile = mongoose.model<IProjectFile>("ProjectFile", ProjectFileSchema);

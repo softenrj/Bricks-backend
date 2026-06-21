@@ -1,11 +1,14 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import cron from "node-cron";
-import AllJobs from "./jobs/index.js"
+import AllJobs from "./jobs/index.js";
 import { logger } from "../config/loggerConfig.js";
 
-logger.color('gray',"\n🏰 The Forge of Time awakens...");
-logger.color('red',"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+logger.color("gray", "\n🏰 The Forge of Time awakens...");
+logger.color("red", "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
-AllJobs.forEach(job => {
+AllJobs.forEach((job) => {
   if (!job.enabled) return;
 
   cron.schedule(job.schedule, async () => {
@@ -16,8 +19,8 @@ AllJobs.forEach(job => {
     }
   });
 
-  logger.color('yellow',`⚙️  Quest forged: ${job.name} ⏰ ${job.schedule}`);
+  logger.color("yellow", `⚙️  Quest forged: ${job.name} ⏰ ${job.schedule}`);
 });
 
-logger.color('red',"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-logger.color('gray',"🔥 All quests are now running under the seal of midnight.\n");
+logger.color("red", "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+logger.color("gray", "🔥 All quests are now running under the seal of midnight.\n");

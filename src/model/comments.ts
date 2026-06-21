@@ -1,21 +1,24 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import mongoose from "mongoose";
 
 export enum BType {
-    EVENT = "event",
-    PROJECT = "project",
+  EVENT = "event",
+  PROJECT = "project",
 }
 
 export interface IComment {
-    _id: mongoose.Types.ObjectId;
-    userId: mongoose.Types.ObjectId;
-    content: string;
-    parentId?: mongoose.Types.ObjectId | null;
-    type: BType;
-    typeId: mongoose.Types.ObjectId;
-    profile: string;
-    isDeleted: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+  _id: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+  content: string;
+  parentId?: mongoose.Types.ObjectId | null;
+  type: BType;
+  typeId: mongoose.Types.ObjectId;
+  profile: string;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const CommentSchema = new mongoose.Schema<IComment>(
@@ -38,5 +41,4 @@ CommentSchema.index({
   createdAt: -1,
 });
 
-export default mongoose.models.Comment ||
-  mongoose.model<IComment>("comments", CommentSchema);
+export default mongoose.models.Comment || mongoose.model<IComment>("comments", CommentSchema);

@@ -1,21 +1,23 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 export const isValidBase64 = (str: string) => {
-    if (!str || str.length % 4 !== 0) return false;
-    const regex = /^[A-Za-z0-9+/=]+$/;
-    return regex.test(str.replace(/\s/g, ""));
+  if (!str || str.length % 4 !== 0) return false;
+  const regex = /^[A-Za-z0-9+/=]+$/;
+  return regex.test(str.replace(/\s/g, ""));
 };
 
-
 export const decodeBase64Encoding = (encodedString: string): string => {
-    try {
-        if (isValidBase64(encodedString)) {
-            const decodedString = atob(encodedString);
-            return decodedString;
-        }
-        return "";
-    } catch (error) {
-        return "";
+  try {
+    if (isValidBase64(encodedString)) {
+      const decodedString = atob(encodedString);
+      return decodedString;
     }
-}
+    return "";
+  } catch (error) {
+    return "";
+  }
+};
 
 `
 async function vectorSearchExample(queryText: string) {
@@ -43,4 +45,4 @@ async function vectorSearchExample(queryText: string) {
     console.log(results);
 }
 
-vectorSearchExample("change Red button to Green");`
+vectorSearchExample("change Red button to Green");`;

@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 export interface Job {
   name: string;
   description: string;
@@ -5,7 +8,6 @@ export interface Job {
   handler: () => Promise<void>;
   enabled: boolean;
 }
-
 
 export enum CronSchedule {
   EVERY_SECOND = "* * * * * *",

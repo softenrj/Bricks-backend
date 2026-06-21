@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import { Request, Response } from "express";
 import { sendResponse } from "../types/apiResponse.js";
 import { BricksEvent } from "../model/events.js";
@@ -5,10 +8,7 @@ import { LikeModule } from "../service/LikeService.js";
 import comments, { BType } from "../model/comments.js";
 import mongoose from "mongoose";
 
-export const createNewEvent = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const createNewEvent = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, description, lyrics, effect, expireAt, liveAt } = req.body;
 
@@ -31,7 +31,7 @@ export const createNewEvent = async (
     if (end <= start) {
       sendResponse(res, 400, {
         success: false,
-        message: "Expire date must be after the Live date"
+        message: "Expire date must be after the Live date",
       });
       return;
     }
@@ -76,7 +76,7 @@ export const getEvents = async (req: Request, res: Response): Promise<void> => {
     if (lastCreatedAt) {
       const date = new Date(lastCreatedAt as any);
       if (!isNaN(date.getTime())) {
-        query.createdAt = { $lt: date }
+        query.createdAt = { $lt: date };
       }
     }
 
@@ -88,43 +88,48 @@ export const getEvents = async (req: Request, res: Response): Promise<void> => {
         $lookup: {
           from: "comments",
           let: { eventId: "$_id" },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$typeId", "$$eventId"] } } },
-            { $count: "count" }
-          ],
-          as: "commentStats"
-        }
+          pipeline: [{ $match: { $expr: { $eq: ["$typeId", "$$eventId"] } } }, { $count: "count" }],
+          as: "commentStats",
+        },
       },
       {
         $lookup: {
           from: "likes",
           let: { eventId: "$_id" },
           pipeline: [
-            { $match: { $expr: { $and: [{ $eq: ["$typeId", "$$eventId"] }, { $eq: ["$userId", userId] }] } } },
-            { $project: { _id: 1 } }
+            {
+              $match: {
+                $expr: { $and: [{ $eq: ["$typeId", "$$eventId"] }, { $eq: ["$userId", userId] }] },
+              },
+            },
+            { $project: { _id: 1 } },
           ],
-          as: "myLike"
-        }
+          as: "myLike",
+        },
       },
       {
         $addFields: {
           comments: { $ifNull: [{ $arrayElemAt: ["$commentStats.count", 0] }, 0] },
-          isLiked: { $gt: [{ $size: "$myLike" }, 0] }
-        }
+          isLiked: { $gt: [{ $size: "$myLike" }, 0] },
+        },
       },
-      { $project: { commentStats: 0, myLike: 0, eventComments: 0, eventLikes: 0 } }
-    ])
-
+      { $project: { commentStats: 0, myLike: 0, eventComments: 0, eventLikes: 0 } },
+    ]);
 
     const hasNextPage = bricksEvent.length > Number(limit);
     const data = hasNextPage ? bricksEvent.slice(0, -1) : bricksEvent;
 
-    sendResponse(res, 200, { success: true, message: "Successfully Fetched project History", data: data, nextCursor: hasNextPage ? data[data.length - 1].createdAt : null })
+    sendResponse(res, 200, {
+      success: true,
+      message: "Successfully Fetched project History",
+      data: data,
+      nextCursor: hasNextPage ? data[data.length - 1].createdAt : null,
+    });
   } catch (error) {
     console.error("Error fetching Events:", error);
     sendResponse(res, 500, { success: false, message: "Internal Server Error" });
   }
-}
+};
 
 export const likeEvent = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -154,23 +159,18 @@ export const likeEvent = async (req: Request, res: Response): Promise<void> => {
 
     let event = null;
 
-    if (result.action === 'added') {
-      event = await BricksEvent.findByIdAndUpdate(
-        eventId,
-        { $inc: { liked: 1 } },
-        { new: true }
-      );
+    if (result.action === "added") {
+      event = await BricksEvent.findByIdAndUpdate(eventId, { $inc: { liked: 1 } }, { new: true });
     } else {
       event = await BricksEvent.findById(eventId);
     }
 
     sendResponse(res, 200, { success: true, message: "Liked", data: event });
-
   } catch (error) {
     console.error("Error while Like Events:", error);
     sendResponse(res, 500, { success: false, message: "Internal Server Error" });
   }
-}
+};
 
 export const unlikeEvent = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -199,20 +199,15 @@ export const unlikeEvent = async (req: Request, res: Response): Promise<void> =>
 
     let event = null;
 
-    if (result.action === 'removed') {
-      event = await BricksEvent.findByIdAndUpdate(
-        eventId,
-        { $inc: { liked: -1 } },
-        { new: true }
-      );
+    if (result.action === "removed") {
+      event = await BricksEvent.findByIdAndUpdate(eventId, { $inc: { liked: -1 } }, { new: true });
     } else {
       event = await BricksEvent.findById(eventId);
     }
 
     sendResponse(res, 200, { success: true, message: "Unliked", data: event });
-
   } catch (error) {
     console.error("Error while Unlike Events:", error);
     sendResponse(res, 500, { success: false, message: "Internal Server Error" });
   }
-}
+};

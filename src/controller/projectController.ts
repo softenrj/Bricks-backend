@@ -1,5 +1,7 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
 
-import express, { Request, Response } from "express"
+import express, { Request, Response } from "express";
 import { Project } from "../model/project.js";
 import { IProjectFile, ProjectFile } from "../model/project_files.js";
 import { ProjectInitializer } from "../service/projectInitializer.js";
@@ -19,497 +21,555 @@ import { DependencyInfo, getDependencyList } from "../service/Dependency.js";
 import mongoose from "mongoose";
 
 /**
- * 
- * @param req 
- * @param res 
- * @returns 
+ *
+ * @param req
+ * @param res
+ * @returns
  */
 export const createNewProject = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
-        const { project_name, project_description, web_tech, tech_lan } = req.body;
+  try {
+    const userId = req.userId;
+    const { project_name, project_description, web_tech, tech_lan } = req.body;
 
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" })
-            return;
-        }
-
-        if (!project_name || !web_tech || !tech_lan) {
-            sendResponse(res, 400, { success: false, message: "Missing required fields" })
-            return;
-        }
-
-        const _des: string = await __projectDescription(project_name, project_description);
-
-        const project = await Project.create({
-            userId,
-            name: project_name,
-            description: _des,
-            web_technology: web_tech,
-            tech_language: tech_lan
-        })
-        await pushUserHistory({ userId, description: `Created project "${project_name}" using ${web_tech} (${tech_lan}).` }, BrickHistoryTypeEnum.user)
-
-        // initialize the projects
-        if (project.id) await ProjectInitializer(project.id, userId, tech_lan);
-        await AchievementService(AchievementEnum.KBP, userId);
-        await projectStats(1, userId);
-
-        sendResponse(res, 201, { success: true, message: " Project is successfully Created ", data: project })
-    } catch (error) {
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" })
-        console.error("Error creating project:", error);
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
     }
-}
+
+    if (!project_name || !web_tech || !tech_lan) {
+      sendResponse(res, 400, { success: false, message: "Missing required fields" });
+      return;
+    }
+
+    const _des: string = await __projectDescription(project_name, project_description);
+
+    const project = await Project.create({
+      userId,
+      name: project_name,
+      description: _des,
+      web_technology: web_tech,
+      tech_language: tech_lan,
+    });
+    await pushUserHistory(
+      { userId, description: `Created project "${project_name}" using ${web_tech} (${tech_lan}).` },
+      BrickHistoryTypeEnum.user
+    );
+
+    // initialize the projects
+    if (project.id) await ProjectInitializer(project.id, userId, tech_lan);
+    await AchievementService(AchievementEnum.KBP, userId);
+    await projectStats(1, userId);
+
+    sendResponse(res, 201, {
+      success: true,
+      message: " Project is successfully Created ",
+      data: project,
+    });
+  } catch (error) {
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    console.error("Error creating project:", error);
+  }
+};
 
 /**
- * 
- * @param req 
- * @param res 
- * @returns 
+ *
+ * @param req
+ * @param res
+ * @returns
  */
 export const getProjects = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
-        const { limit = 12, lastCreatedAt, sort, q, att, created_after, created_before, ach } = req.query;
+  try {
+    const userId = req.userId;
+    const {
+      limit = 12,
+      lastCreatedAt,
+      sort,
+      q,
+      att,
+      created_after,
+      created_before,
+      ach,
+    } = req.query;
 
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        let query: Record<string, any> = { userId, archived: false, markDelete: false };
-
-        if (lastCreatedAt) {
-            const date = new Date(lastCreatedAt as string);
-            if (!isNaN(date.getTime())) {
-                query.createdAt = { $lt: date };
-            }
-        }
-
-        if (created_after || created_before) {
-            query.createdAt = {};
-            if (created_after) query.createdAt.$gte = new Date(created_after as string);
-            if (created_before) query.createdAt.$lte = new Date(created_before as string);
-        }
-
-        if (q) {
-            query.$or = [
-                { name: { $regex: q as string, $options: "i" } },
-                { description: { $regex: q as string, $options: "i" } },
-            ];
-        }
-
-        if (att) {
-            query.starred = true;
-        }
-
-        if (ach) {
-            query.archived = true;
-        }
-
-        let sort_filter: 1 | -1 = -1;
-        if (sort) {
-            sort_filter = sort === "asc" ? 1 : -1;
-        }
-
-        const projects = await Project.find(query)
-            .sort({ createdAt: sort_filter })
-            .limit(Number(limit) + 1);
-
-        const hasNextPage = projects.length > Number(limit);
-        const data = hasNextPage ? projects.slice(0, -1) : projects;
-
-        sendResponse(res, 200, {
-            success: true,
-            message: "Projects fetched successfully",
-            data,
-            nextCursor: hasNextPage ? data[data.length - 1].createdAt : null,
-        });
-    } catch (error) {
-        console.error("Error getting projects:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
     }
+
+    let query: Record<string, any> = { userId, archived: false, markDelete: false };
+
+    if (lastCreatedAt) {
+      const date = new Date(lastCreatedAt as string);
+      if (!isNaN(date.getTime())) {
+        query.createdAt = { $lt: date };
+      }
+    }
+
+    if (created_after || created_before) {
+      query.createdAt = {};
+      if (created_after) query.createdAt.$gte = new Date(created_after as string);
+      if (created_before) query.createdAt.$lte = new Date(created_before as string);
+    }
+
+    if (q) {
+      query.$or = [
+        { name: { $regex: q as string, $options: "i" } },
+        { description: { $regex: q as string, $options: "i" } },
+      ];
+    }
+
+    if (att) {
+      query.starred = true;
+    }
+
+    if (ach) {
+      query.archived = true;
+    }
+
+    let sort_filter: 1 | -1 = -1;
+    if (sort) {
+      sort_filter = sort === "asc" ? 1 : -1;
+    }
+
+    const projects = await Project.find(query)
+      .sort({ createdAt: sort_filter })
+      .limit(Number(limit) + 1);
+
+    const hasNextPage = projects.length > Number(limit);
+    const data = hasNextPage ? projects.slice(0, -1) : projects;
+
+    sendResponse(res, 200, {
+      success: true,
+      message: "Projects fetched successfully",
+      data,
+      nextCursor: hasNextPage ? data[data.length - 1].createdAt : null,
+    });
+  } catch (error) {
+    console.error("Error getting projects:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
 };
 
 /**
- * 
- * @param req 
- * @param res 
- * @returns 
+ *
+ * @param req
+ * @param res
+ * @returns
  */
 export const getProject = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
-        const projectId = req.params.projectId;
+  try {
+    const userId = req.userId;
+    const projectId = req.params.projectId;
 
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        const projects = await Project.findById(projectId)
-
-        sendResponse(res, 200, {
-            success: true,
-            message: "Projects fetched successfully",
-            data: projects
-        });
-    } catch (error) {
-        console.error("Error getting projects:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
     }
+
+    const projects = await Project.findById(projectId);
+
+    sendResponse(res, 200, {
+      success: true,
+      message: "Projects fetched successfully",
+      data: projects,
+    });
+  } catch (error) {
+    console.error("Error getting projects:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
 };
 
 /**
- * 
- * @param req 
- * @param res 
- * @returns 
+ *
+ * @param req
+ * @param res
+ * @returns
  */
 export const getRecentProjects = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
+  try {
+    const userId = req.userId;
 
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        const projects = await Project.find({ userId })
-            .sort({ createdAt: -1 })
-            .limit(4);
-
-
-        sendResponse(res, 200, {
-            success: true,
-            message: "Recent Projects fetched successfully",
-            data: projects
-        });
-    } catch (error) {
-        console.error("Error getting Recent projects:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
     }
+
+    const projects = await Project.find({ userId }).sort({ createdAt: -1 }).limit(4);
+
+    sendResponse(res, 200, {
+      success: true,
+      message: "Recent Projects fetched successfully",
+      data: projects,
+    });
+  } catch (error) {
+    console.error("Error getting Recent projects:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
 };
 
 /**
- * 
- * @param req 
- * @param res 
- * @returns 
+ *
+ * @param req
+ * @param res
+ * @returns
  */
 export const exportAllProject = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        const projects = await Project.find({});
-        if (!projects) {
-            sendResponse(res, 400, { success: false, message: "No Projects Found" });
-            return;
-        }
-
-        sendResponse(res, 200, { success: true, data: projects, message: "Projects fetched successfully" });
-        return;
-
-    } catch (error) {
-        console.error("Error getting ALL projects Export:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
     }
-}
 
-/**
- * 
- * @param req 
- * @param res 
- * @returns 
- */
-export const exportArchProject = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        const projects = await Project.find({ archived: true });
-        if (!projects) {
-            sendResponse(res, 400, { success: false, message: "No Archieve Projects Found" });
-            return;
-        }
-
-        sendResponse(res, 200, { success: true, data: projects, message: "Projects fetched successfully" });
-        return;
-
-    } catch (error) {
-        console.error("Error getting ALL projects Export:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    const projects = await Project.find({});
+    if (!projects) {
+      sendResponse(res, 400, { success: false, message: "No Projects Found" });
+      return;
     }
-}
 
-/**
- * 
- * @param req 
- * @param res 
- * @returns 
- */
-export const markProjectDetete = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        const projectId = req.params.projectId;
-
-        if (!projectId) {
-            sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
-            return;
-        }
-
-        // :: scheduler will remove the project after 10 days giving a chance to recover ::
-        const project = await Project.findOneAndUpdate({
-            userId, _id: projectId
-        }, { markDelete: true }, { $upsert: true });
-
-        await projectStats(0, userId);
-
-        await pushUserHistory({ userId, description: `Deleted project "${project?.name || ""}" on ${new Date().toISOString()}.` }, BrickHistoryTypeEnum.user)
-        sendResponse(res, 201, { success: true, message: "Project is Successfully Removed" });
-    } catch (error) {
-        console.error("Error un node Project:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
-    }
-}
-
-/**
- * 
- * @param req 
- * @param res 
- * @returns 
- */
-export const projectFileTree = async (req: Request, res: Response) => {
-    try {
-        const userId = req.userId;
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        const projectId = req.params.projectId;
-
-        if (!projectId) {
-            sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
-            return;
-        }
-
-        const projectFile = (await ProjectFile.find({ projectId, userId }).lean()) as unknown as IProjectFile[];
-
-        const treeNode: TreeNode = buildTree(projectFile);
-
-        sendResponse(res, 200, { success: true, message: "Project FS is Successfully fetched", data: treeNode });
-    } catch (error) {
-        console.error("Error Getting FS: Project:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
-    }
-}
-
-/**
- * 
- * @param req 
- * @param res 
- * @returns 
- */
-export const bricksCodeCompletion = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        const { context } = req.body;
-        ProcessSocket.pushStatus({
-            status: true,
-            message: "Generating suggestions… hang tight!"
-        }, userId)
-        const __sugges = await CodeCompletion.getCodeCompletion(context);
-        ProcessSocket.pushStatus({
-            status: false,
-            message: "Code suggestions ready!"
-        }, userId)
-        sendResponse(res, 200, { success: true, message: "Bricks:code__sugg__", data: __sugges });
-    } catch (error) {
-        console.error("Error Code sugg: Project:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
-    }
-}
-
-export const bricksCodeImprovement = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        const { context, fileName, fileLanguage, projectId } = req.body;
-        ProcessSocket.pushStatus({
-            message: "Generating Full code.. hang tight!",
-            status: true
-        }, userId);
-
-        const cleanCode = await FullCodeCompletion.getCodeCompletion(context, fileName, fileLanguage);
-        pushProjectHistory({ userId, projectId, description: `Improved code for file "${fileName}".` }, BrickHistoryTypeEnum.CodeCompletion)
-        ProcessSocket.pushStatus({
-            status: false,
-            message: "Code is ready!"
-        }, userId)
-        sendResponse(res, 200, { success: true, message: "Bricks:code__Comp__", data: cleanCode });
-    } catch (error) {
-        console.error("Error Code sugg: Project:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
-    }
-}
-
-/**
- * 
- * @param req 
- * @param res 
- * @returns 
- */
-export const getProjectCodeLense = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
-        const projectId = req.params.projectId;
-
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        if (!projectId) {
-            sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
-            return;
-        }
-
-        const projectFile = (await ProjectFile.find({ projectId, userId }).lean()) as unknown as IProjectFile[];
-
-        const treeNode: TreeNode = buildTree(projectFile);
-
-        const CodeLense: CodeLense = getProjectCodeLenseService(treeNode);
-
-        sendResponse(res, 200, {
-            success: true,
-            message: "Projects Code Lense fetched successfully",
-            data: CodeLense
-        });
-    } catch (error) {
-        console.error("Error getting projects Code lense:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
-    }
+    sendResponse(res, 200, {
+      success: true,
+      data: projects,
+      message: "Projects fetched successfully",
+    });
+    return;
+  } catch (error) {
+    console.error("Error getting ALL projects Export:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
 };
 
 /**
- * 
- * @param req 
- * @param res 
- * @returns 
+ *
+ * @param req
+ * @param res
+ * @returns
  */
-export const getProjectDependency = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
-        const projectId = req.params.projectId;
-
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        if (!projectId) {
-            sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
-            return;
-        }
-
-        const depInfo: DependencyInfo[] = await getDependencyList(projectId, userId);
-
-        sendResponse(res, 200, { message: "successfully fetched Project Dependency List", success: true, data: depInfo })
-    } catch (error) {
-        console.error("Error getting projects Code lense:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+export const exportArchProject = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
     }
-}
 
+    const projects = await Project.find({ archived: true });
+    if (!projects) {
+      sendResponse(res, 400, { success: false, message: "No Archieve Projects Found" });
+      return;
+    }
+
+    sendResponse(res, 200, {
+      success: true,
+      data: projects,
+      message: "Projects fetched successfully",
+    });
+    return;
+  } catch (error) {
+    console.error("Error getting ALL projects Export:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
+};
 
 /**
- * 
- * @param req 
- * @param res 
- * @returns 
+ *
+ * @param req
+ * @param res
+ * @returns
+ */
+export const markProjectDetete = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const projectId = req.params.projectId;
+
+    if (!projectId) {
+      sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
+      return;
+    }
+
+    // :: scheduler will remove the project after 10 days giving a chance to recover ::
+    const project = await Project.findOneAndUpdate(
+      {
+        userId,
+        _id: projectId,
+      },
+      { markDelete: true },
+      { $upsert: true }
+    );
+
+    await projectStats(0, userId);
+
+    await pushUserHistory(
+      {
+        userId,
+        description: `Deleted project "${project?.name || ""}" on ${new Date().toISOString()}.`,
+      },
+      BrickHistoryTypeEnum.user
+    );
+    sendResponse(res, 201, { success: true, message: "Project is Successfully Removed" });
+  } catch (error) {
+    console.error("Error un node Project:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
+};
+
+/**
+ *
+ * @param req
+ * @param res
+ * @returns
+ */
+export const projectFileTree = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const projectId = req.params.projectId;
+
+    if (!projectId) {
+      sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
+      return;
+    }
+
+    const projectFile = (await ProjectFile.find({
+      projectId,
+      userId,
+    }).lean()) as unknown as IProjectFile[];
+
+    const treeNode: TreeNode = buildTree(projectFile);
+
+    sendResponse(res, 200, {
+      success: true,
+      message: "Project FS is Successfully fetched",
+      data: treeNode,
+    });
+  } catch (error) {
+    console.error("Error Getting FS: Project:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
+};
+
+/**
+ *
+ * @param req
+ * @param res
+ * @returns
+ */
+export const bricksCodeCompletion = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { context } = req.body;
+    ProcessSocket.pushStatus(
+      {
+        status: true,
+        message: "Generating suggestions… hang tight!",
+      },
+      userId
+    );
+    const __sugges = await CodeCompletion.getCodeCompletion(context);
+    ProcessSocket.pushStatus(
+      {
+        status: false,
+        message: "Code suggestions ready!",
+      },
+      userId
+    );
+    sendResponse(res, 200, { success: true, message: "Bricks:code__sugg__", data: __sugges });
+  } catch (error) {
+    console.error("Error Code sugg: Project:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
+};
+
+export const bricksCodeImprovement = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { context, fileName, fileLanguage, projectId } = req.body;
+    ProcessSocket.pushStatus(
+      {
+        message: "Generating Full code.. hang tight!",
+        status: true,
+      },
+      userId
+    );
+
+    const cleanCode = await FullCodeCompletion.getCodeCompletion(context, fileName, fileLanguage);
+    pushProjectHistory(
+      { userId, projectId, description: `Improved code for file "${fileName}".` },
+      BrickHistoryTypeEnum.CodeCompletion
+    );
+    ProcessSocket.pushStatus(
+      {
+        status: false,
+        message: "Code is ready!",
+      },
+      userId
+    );
+    sendResponse(res, 200, { success: true, message: "Bricks:code__Comp__", data: cleanCode });
+  } catch (error) {
+    console.error("Error Code sugg: Project:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
+};
+
+/**
+ *
+ * @param req
+ * @param res
+ * @returns
+ */
+export const getProjectCodeLense = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    const projectId = req.params.projectId;
+
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
+    }
+
+    if (!projectId) {
+      sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
+      return;
+    }
+
+    const projectFile = (await ProjectFile.find({
+      projectId,
+      userId,
+    }).lean()) as unknown as IProjectFile[];
+
+    const treeNode: TreeNode = buildTree(projectFile);
+
+    const CodeLense: CodeLense = getProjectCodeLenseService(treeNode);
+
+    sendResponse(res, 200, {
+      success: true,
+      message: "Projects Code Lense fetched successfully",
+      data: CodeLense,
+    });
+  } catch (error) {
+    console.error("Error getting projects Code lense:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
+};
+
+/**
+ *
+ * @param req
+ * @param res
+ * @returns
+ */
+export const getProjectDependency = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    const projectId = req.params.projectId;
+
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
+    }
+
+    if (!projectId) {
+      sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
+      return;
+    }
+
+    const depInfo: DependencyInfo[] = await getDependencyList(projectId, userId);
+
+    sendResponse(res, 200, {
+      message: "successfully fetched Project Dependency List",
+      success: true,
+      data: depInfo,
+    });
+  } catch (error) {
+    console.error("Error getting projects Code lense:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
+};
+
+/**
+ *
+ * @param req
+ * @param res
+ * @returns
  */
 export const getProjectDoc = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.userId;
-        const projectId = req.params.projectId;
+  try {
+    const userId = req.userId;
+    const projectId = req.params.projectId;
 
-        if (!userId) {
-            sendResponse(res, 401, { success: false, message: "Unauthorized" });
-            return;
-        }
-
-        if (!projectId) {
-            sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
-            return;
-        }
-        const docs = await ProjectFile.aggregate([
-            {
-                $match: {
-                    projectId: new mongoose.Types.ObjectId(projectId),
-                    userId,
-                    name: {
-                        $in: [
-                            "README.md",
-                            "LICENSE",
-                            "CODE_OF_CONDUCT.md",
-                            "CONTRIBUTING.md", 
-                            "Dockerfile", 
-                            "docker-compose.yml",
-                            "SECURITY.md",
-                            "CHANGELOG.md",
-                            "LICENCE.md"
-                        ]
-                    }
-                }
-            },
-            {
-                $group: {
-                    _id: null,
-                    files: {
-                        $push: {
-                            k: {
-                                $toLower: {
-                                    $arrayElemAt: [{ $split: ["$name", "."] }, 0]
-                                }
-                            },
-                            v: "$content" 
-                        }
-                    }
-                }
-            },
-            {
-                $replaceRoot: {
-                    newRoot: { $arrayToObject: "$files" }
-                }
-            }
-        ]);
-
-        sendResponse(res, 200, { success: true, message: "successfully fetched Doc ", data: docs });
-    } catch (error) {
-        console.error("Error getting projects Code lense:", error);
-        sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
     }
-}
+
+    if (!projectId) {
+      sendResponse(res, 400, { success: false, message: "None or Envalid Project id" });
+      return;
+    }
+    const docs = await ProjectFile.aggregate([
+      {
+        $match: {
+          projectId: new mongoose.Types.ObjectId(projectId),
+          userId,
+          name: {
+            $in: [
+              "README.md",
+              "LICENSE",
+              "CODE_OF_CONDUCT.md",
+              "CONTRIBUTING.md",
+              "Dockerfile",
+              "docker-compose.yml",
+              "SECURITY.md",
+              "CHANGELOG.md",
+              "LICENCE.md",
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          files: {
+            $push: {
+              k: {
+                $toLower: {
+                  $arrayElemAt: [{ $split: ["$name", "."] }, 0],
+                },
+              },
+              v: "$content",
+            },
+          },
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: { $arrayToObject: "$files" },
+        },
+      },
+    ]);
+
+    sendResponse(res, 200, { success: true, message: "successfully fetched Doc ", data: docs });
+  } catch (error) {
+    console.error("Error getting projects Code lense:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+  }
+};

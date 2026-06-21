@@ -1,4 +1,7 @@
-import express, { Response, Request } from "express"
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
+import express, { Response, Request } from "express";
 import bricks_chats from "../model/bricks_chats.js";
 import { sendResponse } from "../types/apiResponse.js";
 import { BRICKS_AI_ENGINE } from "../service/bricksChat.js";
@@ -7,12 +10,11 @@ import { uIdProvider } from "../service/user.uidProvider.js";
 import bricks_message from "../model/bricks_message.js";
 import { BRICKSCHATSSE_SERVICE } from "../serversideevents/bricks.chat.sse.js";
 
-
 /**
- * 
- * @param req 
- * @param res 
- * @returns 
+ *
+ * @param req
+ * @param res
+ * @returns
  */
 
 export const projectBricksChatTabs = async (req: Request, res: Response): Promise<void> => {
@@ -35,18 +37,13 @@ export const projectBricksChatTabs = async (req: Request, res: Response): Promis
     }
 
     if (q) {
-      query.name = { $regex: q as string, $options: "i" } 
+      query.name = { $regex: q as string, $options: "i" };
     }
 
+    const tabs = await bricks_chats.find(query).sort({ createdAt: -1 }).limit(limit);
 
-    const tabs = await bricks_chats
-      .find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit);
-
-    const nextCursor: Date | null = tabs.length > 0
-      ? new Date(tabs[tabs.length - 1].createdAt)
-      : null;
+    const nextCursor: Date | null =
+      tabs.length > 0 ? new Date(tabs[tabs.length - 1].createdAt) : null;
 
     sendResponse(res, 200, {
       success: true,
@@ -61,10 +58,10 @@ export const projectBricksChatTabs = async (req: Request, res: Response): Promis
 };
 
 /**
- * 
- * @param req 
- * @param res 
- * @returns 
+ *
+ * @param req
+ * @param res
+ * @returns
  */
 export const projectBricksChatMetaData = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -78,28 +75,31 @@ export const projectBricksChatMetaData = async (req: Request, res: Response): Pr
     }
 
     if (!projectId) {
-      sendResponse(res, 401, { success: false, message: "ChatId or Project Id is Envalid please try again." })
+      sendResponse(res, 401, {
+        success: false,
+        message: "ChatId or Project Id is Envalid please try again.",
+      });
       return;
     }
 
-    if (!prompt || prompt.trim() == '') {
-      sendResponse(res, 401, { success: false, message: "Prompt cannot be empty." })
+    if (!prompt || prompt.trim() == "") {
+      sendResponse(res, 401, { success: false, message: "Prompt cannot be empty." });
       return;
     }
 
-    const chat = await BRICKSCHATSSE_SERVICE.getChatObject(chatId,userId,projectId,prompt)
-    sendResponse(res, 200, { success: true, message: "bricks chat metadata", data: chat});
+    const chat = await BRICKSCHATSSE_SERVICE.getChatObject(chatId, userId, projectId, prompt);
+    sendResponse(res, 200, { success: true, message: "bricks chat metadata", data: chat });
   } catch (error) {
     console.error("Error Getting Chat Metadata: ", error);
     sendResponse(res, 500, { success: false, message: "Internal Server Error" });
   }
-}
+};
 
 /**
- * 
- * @param req 
- * @param res 
- * @returns 
+ *
+ * @param req
+ * @param res
+ * @returns
  */
 export const projectBricksChat = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -112,34 +112,46 @@ export const projectBricksChat = async (req: Request, res: Response): Promise<vo
     }
 
     if (!projectId) {
-      sendResponse(res, 401, { success: false, message: "ChatId or Project Id is Envalid please try again." })
+      sendResponse(res, 401, {
+        success: false,
+        message: "ChatId or Project Id is Envalid please try again.",
+      });
       return;
     }
 
-    if (!prompt || prompt.trim() == '') {
-      sendResponse(res, 401, { success: false, message: "Prompt cannot be empty." })
+    if (!prompt || prompt.trim() == "") {
+      sendResponse(res, 401, { success: false, message: "Prompt cannot be empty." });
       return;
     }
 
     if (stream) {
-      await BRICKSCHATSSE_SERVICE.processChat(req,res);
-      return ;
+      await BRICKSCHATSSE_SERVICE.processChat(req, res);
+      return;
     }
 
-    const Airesult = await BRICKS_AI_ENGINE.projectChatSupport(chatId, userId, String(projectId), prompt);
+    const Airesult = await BRICKS_AI_ENGINE.projectChatSupport(
+      chatId,
+      userId,
+      String(projectId),
+      prompt
+    );
 
     const result: Message = {
       id: uIdProvider(),
       role: "assistant",
       content: Airesult.result,
-      isNew: true
-    }
-    sendResponse(res, 200, { success: true, message: "Ai Response", data: { message: result, chat: Airesult.chat } });
+      isNew: true,
+    };
+    sendResponse(res, 200, {
+      success: true,
+      message: "Ai Response",
+      data: { message: result, chat: Airesult.chat },
+    });
   } catch (error) {
     console.error("Error Getting FS: Project:", error);
     sendResponse(res, 500, { success: false, message: "Internal Server Error" });
   }
-}
+};
 
 export const bricksChatRecoll = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -151,18 +163,20 @@ export const bricksChatRecoll = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    const chatHistory = await bricks_message.find({ userId, chatId })
-      .sort({ createdAt: 1 })
-      .lean();
+    const chatHistory = await bricks_message.find({ userId, chatId }).sort({ createdAt: 1 }).lean();
 
-    const enrichedChatHistory = chatHistory.map(chat => ({
+    const enrichedChatHistory = chatHistory.map((chat) => ({
       ...chat,
       isNew: false,
     }));
 
-    sendResponse(res, 200, { success: true, message: "Successfully fetched History", data: enrichedChatHistory });
+    sendResponse(res, 200, {
+      success: true,
+      message: "Successfully fetched History",
+      data: enrichedChatHistory,
+    });
   } catch (error) {
     console.error("Error Getting FS: Project:", error);
     sendResponse(res, 500, { success: false, message: "Internal Server Error" });
   }
-}
+};

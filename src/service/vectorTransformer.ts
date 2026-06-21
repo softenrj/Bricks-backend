@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import { pipeline } from "@xenova/transformers";
 
 async function getVectorEmbedding(text: string) {

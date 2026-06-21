@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import { Request, Response } from "express";
 import { sendResponse } from "../types/apiResponse.js";
 import ArchForge from "../pipelines/ArchForgeEngine.js";

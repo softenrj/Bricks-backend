@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import * as generate from "@babel/generator";
 import * as babelParser from "@babel/parser";
 import traverse, { NodePath } from "@babel/traverse";
@@ -15,7 +18,7 @@ export enum FileType {
 }
 
 export interface FileContextResult {
-  snippets: { symbolName: string, snippet: string, functionType: string }[];
+  snippets: { symbolName: string; snippet: string; functionType: string }[];
   imports: string[];
   exports: string[];
   dependencies: string[];
@@ -28,10 +31,14 @@ export interface FileContextResult {
  */
 function getParserPlugins(fileType: FileType): babelParser.ParserPlugin[] {
   switch (fileType) {
-    case FileType.TS: return ["typescript"];
-    case FileType.TSX: return ["typescript", "jsx"];
-    case FileType.JSX: return ["jsx"];
-    default: return [];
+    case FileType.TS:
+      return ["typescript"];
+    case FileType.TSX:
+      return ["typescript", "jsx"];
+    case FileType.JSX:
+      return ["jsx"];
+    default:
+      return [];
   }
 }
 
@@ -41,14 +48,22 @@ function getParserPlugins(fileType: FileType): babelParser.ParserPlugin[] {
 function getFileType(fileName: string): FileType {
   const ext = fileName.split(".").pop()?.toLowerCase();
   switch (ext) {
-    case "js": return FileType.JS;
-    case "jsx": return FileType.JSX;
-    case "ts": return FileType.TS;
-    case "tsx": return FileType.TSX;
-    case "html": return FileType.HTML;
-    case "css": return FileType.CSS;
-    case "md": return FileType.MD;
-    default: return FileType.JS;
+    case "js":
+      return FileType.JS;
+    case "jsx":
+      return FileType.JSX;
+    case "ts":
+      return FileType.TS;
+    case "tsx":
+      return FileType.TSX;
+    case "html":
+      return FileType.HTML;
+    case "css":
+      return FileType.CSS;
+    case "md":
+      return FileType.MD;
+    default:
+      return FileType.JS;
   }
 }
 
@@ -61,7 +76,6 @@ export function extractFileContextAST(
   fileContent: string,
   targetIdentifier?: string
 ): FileContextResult {
-
   if (fileName.endsWith(".json")) {
     return {
       snippets: [{ symbolName: fileName, snippet: fileContent, functionType: "none" }],
@@ -74,7 +88,7 @@ export function extractFileContextAST(
   }
   const fileType = getFileType(fileName);
 
-  let snippets: { symbolName: string, snippet: string, functionType: string }[] = [];
+  let snippets: { symbolName: string; snippet: string; functionType: string }[] = [];
   let imports: string[] = [];
   let exports: string[] = [];
   let dependencies: string[] = [];
@@ -104,12 +118,11 @@ export function extractFileContextAST(
         const decl: any = path.node.declaration;
         if (decl?.id?.name) exports.push(decl.id.name);
         else exports.push("default");
-      }
+      },
     });
 
     // Extract snippetss for target function/component
     traverse.default(ast, {
-
       FunctionDeclaration(path: any) {
         const name = path.node.id?.name;
 
@@ -121,9 +134,7 @@ export function extractFileContextAST(
         snippets.push({
           symbolName: name,
           snippet: code,
-          functionType: isReactComponent
-            ? "React functional component"
-            : "Function"
+          functionType: isReactComponent ? "React functional component" : "Function",
         });
       },
 
@@ -133,20 +144,17 @@ export function extractFileContextAST(
 
         if (
           name &&
-          (init?.type === "ArrowFunctionExpression" ||
-            init?.type === "FunctionExpression")
+          (init?.type === "ArrowFunctionExpression" || init?.type === "FunctionExpression")
         ) {
           const code = generate.generate(path.parentPath.node).code;
 
           const isReactComponent = name[0] === name[0].toUpperCase();
 
-snippets.push({
-  symbolName: name,
-  snippet: code,
-  functionType: isReactComponent
-    ? "React arrow functional component"
-    : "Arrow function"
-});
+          snippets.push({
+            symbolName: name,
+            snippet: code,
+            functionType: isReactComponent ? "React arrow functional component" : "Arrow function",
+          });
         }
       },
 
@@ -157,12 +165,11 @@ snippets.push({
 
         const code = generate.generate(path.node).code;
 
-snippets.push({
-  symbolName: name,
-  snippet: code,
-  functionType: "Class method"
-});
-
+        snippets.push({
+          symbolName: name,
+          snippet: code,
+          functionType: "Class method",
+        });
       },
 
       ObjectMethod(path: any) {
@@ -173,23 +180,23 @@ snippets.push({
         const code = generate.generate(path.node).code;
 
         snippets.push({ symbolName: name, snippet: code, functionType: "Object method" });
-      }
-
+      },
     });
-  }
-
-  else if ([FileType.HTML, FileType.CSS, FileType.MD].includes(fileType)) {
+  } else if ([FileType.HTML, FileType.CSS, FileType.MD].includes(fileType)) {
     if (fileType === FileType.HTML) {
       const root = parseHTML(fileContent);
       if (targetIdentifier) {
         const el: HTMLElement | null = root.querySelector(targetIdentifier);
-        snippets = el ? [{ symbolName: fileName, snippet: el.toString(), functionType: "none" }] : [{ symbolName: fileName, snippet: fileContent, functionType: "none" }];
+        snippets = el
+          ? [{ symbolName: fileName, snippet: el.toString(), functionType: "none" }]
+          : [{ symbolName: fileName, snippet: fileContent, functionType: "none" }];
       }
     }
   }
 
-  const lines = snippets.reduce((total, snip) => { return total + snip.snippet.length }, 0);
+  const lines = snippets.reduce((total, snip) => {
+    return total + snip.snippet.length;
+  }, 0);
 
   return { snippets, imports, exports, dependencies, lines, fileType };
 }
-

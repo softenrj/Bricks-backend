@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import mongoose from "mongoose";
 
 export enum EffectEnum {
@@ -7,7 +10,7 @@ export enum EffectEnum {
   DIWALI = "diwali",
   Mahashivratri = "mahashivratri",
   HOLI = "holi",
-  NONE = "none"
+  NONE = "none",
 }
 
 export interface IEvent {
@@ -15,7 +18,7 @@ export interface IEvent {
   name: string;
   description: string;
   thumbnail: string;
-  lyrics?: { time: number, text: string }[]
+  lyrics?: { time: number; text: string }[];
   audio?: string;
   effect?: EffectEnum;
   liveAt: Date;
@@ -32,10 +35,12 @@ const EventSchema = new mongoose.Schema<IEvent>(
     liveAt: { type: Date, required: false },
     expireAt: { type: Date, required: true },
     thumbnail: { type: String, required: true },
-    lyrics: [{
-      time: { type: Number, required: true }, // seconds
-      text: { type: String, required: true },
-    }],
+    lyrics: [
+      {
+        time: { type: Number, required: true }, // seconds
+        text: { type: String, required: true },
+      },
+    ],
     audio: { type: String },
     liked: { type: Number, default: 0 },
     effect: {
@@ -47,5 +52,4 @@ const EventSchema = new mongoose.Schema<IEvent>(
   { timestamps: true }
 );
 
-
-export const BricksEvent = mongoose.model<IEvent>('events', EventSchema);
+export const BricksEvent = mongoose.model<IEvent>("events", EventSchema);

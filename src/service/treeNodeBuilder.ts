@@ -1,34 +1,36 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import { IProjectFile, ProjectContextNode } from "../model/project_files.js";
 
-export type TreeNode = { [key: string]: string | TreeNode }
+export type TreeNode = { [key: string]: string | TreeNode };
 
 export function buildTree(files: IProjectFile[]): TreeNode {
-    const root: TreeNode = {};
+  const root: TreeNode = {};
 
-    for (const file of files) {
-        const parts = file.path === '.' ? [] : file.path.split('/');
-        let current = root;
+  for (const file of files) {
+    const parts = file.path === "." ? [] : file.path.split("/");
+    let current = root;
 
-        for (const part of parts) {
-            if (!current[part]) current[part] = {};
-            current = current[part] as TreeNode;
-        }
-
-        if (file.type === 'folder') {
-            if (!current[file.name]) current[file.name] = {};
-        } else {
-            current[file.name] = file.content || "";
-        }
+    for (const part of parts) {
+      if (!current[part]) current[part] = {};
+      current = current[part] as TreeNode;
     }
 
-    return root;
+    if (file.type === "folder") {
+      if (!current[file.name]) current[file.name] = {};
+    } else {
+      current[file.name] = file.content || "";
+    }
+  }
+
+  return root;
 }
 export function buildAsciiTree(files: IProjectFile[]): string {
   const root: any = {};
 
   for (const file of files) {
-    const fullPath =
-      file.path === "." ? file.name : file.path + "/" + file.name;
+    const fullPath = file.path === "." ? file.name : file.path + "/" + file.name;
 
     const parts = fullPath.split("/").filter(Boolean);
     let current = root;
@@ -67,22 +69,20 @@ function renderAscii(node: any, prefix: string): string {
   return output;
 }
 
-export function buildContextTree(
-  files: IProjectFile[]
-): ProjectContextNode[] {
+export function buildContextTree(files: IProjectFile[]): ProjectContextNode[] {
   const nodeMap: Record<string, ProjectContextNode> = {};
   const roots: ProjectContextNode[] = [];
 
   for (const file of files) {
     const node: ProjectContextNode = {
-        ...file,
+      ...file,
       child: [],
       parent: undefined,
     };
 
-    nodeMap[file.path + '/' + file.name] = node;
+    nodeMap[file.path + "/" + file.name] = node;
 
-    if (file.path && file.path !== '.') {
+    if (file.path && file.path !== ".") {
       const parentPath = file.path;
       const parentNode = nodeMap[parentPath];
       if (parentNode) {
@@ -95,7 +95,7 @@ export function buildContextTree(
           _id: `placeholder-${parentPath}`,
           projectId: file.projectId,
           userId: file.userId,
-          name: parentPath.split('/').pop() || '',
+          name: parentPath.split("/").pop() || "",
           path: parentPath,
           type: "folder",
           version: 0,

@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import express, { Application } from "express";
 import morgan from "morgan";
 import compression from "compression";
@@ -13,11 +16,14 @@ import { router } from "./router.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import mongoServer from "./config/mongoConfig.js";
 import { env } from "./config/env.js";
-import "./scheduler/index.js"
-import cookieParser from 'cookie-parser';
+import "./scheduler/index.js";
+import cookieParser from "cookie-parser";
+import dns from "node:dns";
+
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 const app = express();
-env
+env;
 
 // :::: Middleware Stack ::::
 // Doc
@@ -25,14 +31,16 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Logger
 app.use(morgan("dev"));
-app.use(compression({
+app.use(
+  compression({
     filter: (req, res) => {
-        if (req.headers.accept?.includes("text/event-stream")) {
-            return false;
-        }
-        return compression.filter(req, res);
-    }
-}));
+      if (req.headers.accept?.includes("text/event-stream")) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+  })
+);
 helmetConfig(app);
 corsConfig(app);
 

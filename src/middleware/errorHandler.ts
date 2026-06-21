@@ -1,10 +1,9 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import { Request, Response } from "express";
 
-export const errorHandler = (
-  err: any,
-  req: Request,
-  res: Response,
-) => {
+export const errorHandler = (err: any, req: Request, res: Response) => {
   console.error("❌ Error:", err);
 
   res.status(err.status ?? 500).json({

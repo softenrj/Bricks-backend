@@ -1,6 +1,9 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import { v2 as cloudinary } from "cloudinary";
-import multer from 'multer';
-import { NextFunction, Request, Response } from 'express';
+import multer from "multer";
+import { NextFunction, Request, Response } from "express";
 
 const storage = multer.memoryStorage();
 
@@ -29,15 +32,14 @@ const FileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
   } else {
     cb(new Error("You can only upload images"));
   }
-
-}
+};
 
 export const upLoad = multer({
   storage: storage,
   fileFilter: FileFilter,
   limits: {
-    fileSize: 32 * 1024 * 1024
-  }
+    fileSize: 32 * 1024 * 1024,
+  },
 }).single("image");
 
 export const uploadFiles = multer({
@@ -46,10 +48,7 @@ export const uploadFiles = multer({
     fileSize: 50 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
-    if (
-      file.mimetype.startsWith("image/") ||
-      file.mimetype.startsWith("audio/")
-    ) {
+    if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("audio/")) {
       cb(null, true);
     } else {
       cb(new Error("Only image and audio files allowed"));
@@ -60,7 +59,7 @@ export const uploadFiles = multer({
   { name: "audio", maxCount: 1 },
 ]);
 
-const audioFileFilter: multer.Options["fileFilter"] = ( req, file, cb ) => {
+const audioFileFilter: multer.Options["fileFilter"] = (req, file, cb) => {
   if (file.mimetype.startsWith("audio/")) {
     cb(null, true);
   } else {
@@ -93,22 +92,19 @@ export const uploadSingleImageToCloudnary = async (
       return;
     }
 
-    const stream = cloudinary.uploader.upload_stream(
-      { folder: "Bricks" },
-      (error, result) => {
-        if (error || !result) {
-          res.status(500).json({ success: false, error: error?.message });
-          return;
-        }
-
-        req.cloudinaryImage = {
-          url: result.secure_url,
-          public_id: result.public_id,
-        };
-
-        next();
+    const stream = cloudinary.uploader.upload_stream({ folder: "Bricks" }, (error, result) => {
+      if (error || !result) {
+        res.status(500).json({ success: false, error: error?.message });
+        return;
       }
-    );
+
+      req.cloudinaryImage = {
+        url: result.secure_url,
+        public_id: result.public_id,
+      };
+
+      next();
+    });
 
     stream.end(req.file.buffer);
   } catch (err: any) {
@@ -133,29 +129,25 @@ export const uploadToCloudnary = async (
 
     const imageFile = files.image[0];
 
-    const stream = cloudinary.uploader.upload_stream(
-      { folder: "Bricks" },
-      (error, result) => {
-        if (error || !result) {
-          res.status(500).json({ success: false, error: error?.message });
-          return;
-        }
-
-        req.cloudinaryImage = {
-          url: result.secure_url,
-          public_id: result.public_id,
-        };
-
-        next();
+    const stream = cloudinary.uploader.upload_stream({ folder: "Bricks" }, (error, result) => {
+      if (error || !result) {
+        res.status(500).json({ success: false, error: error?.message });
+        return;
       }
-    );
+
+      req.cloudinaryImage = {
+        url: result.secure_url,
+        public_id: result.public_id,
+      };
+
+      next();
+    });
 
     stream.end(imageFile.buffer);
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
-
 
 export const uploadAudioToCloudinary = async (
   req: Request,

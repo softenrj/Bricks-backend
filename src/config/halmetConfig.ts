@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Raj
+// See LICENSE for details.
+
 import helmet from "helmet";
 import { Express } from "express";
 
