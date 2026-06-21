@@ -117,8 +117,9 @@ export class BRICKS_AI_ENGINE {
             index: "vector_index",
             path: "vector",
             queryVector,
-            numCandidates: 10,
-            limit: 2,
+            numCandidates: 380,
+            limit: 6,
+            filter: { projectId: new mongoose.Types.ObjectId(projectId) },
           },
         },
         { $project: { fileId: 1, contextId: 1, score: 1 } },
@@ -131,6 +132,22 @@ export class BRICKS_AI_ENGINE {
           },
         },
         { $unwind: "$context" },
+        { $match: { "context.isDefault": false } },
+        {
+          $project: {
+            score: { $meta: "vectorSearchScore" },
+            projectId: 1,
+            context: {
+              isDefault: 1,
+              imports: 1,
+              exports: 1,
+              snippet: 1,
+              fileId: 1,
+              fileType: 1,
+              filePath: 1,
+            },
+          },
+        },
       ]);
 
       const contextText =
