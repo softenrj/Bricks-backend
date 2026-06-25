@@ -16,7 +16,6 @@ import { archSSEmanager } from "../serversideevents/ArchSSEManager.js";
 import { codeGenPrompt, folderStructurePrompt, promptCraftMaster } from "./ArchPrompts.js";
 import { Snapshot, snapshotEnum } from "../model/snapshot.js";
 import { snapShotFile } from "../model/snapshotfile.js";
-import { uploadFiles } from "../middleware/fileUpload.js";
 
 interface Process {
   prompt: string;
@@ -84,7 +83,7 @@ export default class ArchForge {
 
       const processId = processIdProvider();
       this.pushToUser(
-        "🔍 Analyzing your request and scanning related project files...",
+        "Analyzing your request and scanning related project files...",
         projectId,
         userId,
         processId,
@@ -277,7 +276,7 @@ export default class ArchForge {
           const tempProcessId = processIdProvider();
           processMap.set(tempProcessId, req);
           this.pushToUser(
-            `🛠️ ${req.task === "create" ? "Creating" : "Modifying"}: ${req.targetFile} • ${req.architecturalResponsibilities}`,
+            `${req.task === "create" ? "Creating" : "Modifying"}: ${req.targetFile} • ${req.architecturalResponsibilities}`,
             projectId,
             userId,
             tempProcessId,
@@ -490,7 +489,7 @@ export default class ArchForge {
         } finally {
           for (const [processId, req] of processMap) {
             this.pushToUser(
-              `🛠️ ${req.task === "create" ? "Creating" : "Modifying"}: ${req.targetFile} • ${req.architecturalResponsibilities}`,
+              `${req.task === "create" ? "Creating" : "Modifying"}: ${req.targetFile} • ${req.architecturalResponsibilities}`,
               projectId,
               userId,
               processId,
@@ -517,7 +516,7 @@ export default class ArchForge {
         enrichedFiles,
         snapshotv1Id
       );
-      this.pushToUser(`🛠️ snapshot is ready`, projectId, userId, snapprocess, "complete");
+      this.pushToUser(`snapshot is ready`, projectId, userId, snapprocess, "complete");
 
       return { snapv1Id: snapshotv1Id, snapv2Id: snapshotv2Id } as any;
     } catch (error) {
@@ -674,76 +673,77 @@ export default class ArchForge {
       // ENHANCED: Merged functional architecture with extreme UI/UX mandates
       const enhancedSystemPrompt = `You are a Principal-Level Software Architect AND Elite Product Designer.
 
-========================
-INPUT DATA
-========================
-1. Project Tree: ${projectTree}
-2. Existing Exports: ${optimizedContext}
-3. User Request: "${userPrompt}"
-
-========================
-GLOBAL DESIGN MANDATE (CRITICAL & NON-NEGOTIABLE)
-========================
-Whenever the user requests new UI components, pages, or visual improvements (e.g., "beautiful", "modern"), you MUST explicitly inject premium styling responsibilities into the output. 
-- ALWAYS include directives for modern, high-end design (e.g., "Implement premium glassmorphism UI", "Use Tailwind for a polished dark-mode aesthetic", "Add Framer Motion for smooth layout transitions").
-- NEVER output barebones functional HTML. Functionality and stunning UI must coexist.
-
-========================
-MANDATORY: CLASSIFY THE REQUEST
-========================
-Classify the user request into ONE primary type to determine the structural approach, but remember the Global Design Mandate applies to ALL of them:
-
-**"ui-only"** (VISUAL REFINEMENT):
-- Keywords: beautiful, animated, modern, aesthetic, redesign.
-- Rule: Modify existing files only. Focus heavily on animations, spacing, colors, and layout.
-
-**"architectural"** (NEW PAGES / COMPLEX FEATURES):
-- Keywords: new page, todo app, new screen, routing.
-- Rule: Create necessary files and wire routing. YOU MUST ALSO include premium UI responsibilities for every new file created.
-
-**"behavioral"** (LOGIC / STATE + UX):
-- Keywords: on click, form, calculate, functionality.
-- Rule: Add logic and state. Ensure any UI feedback (success messages, loaders) includes smooth transitions and polished styling.
-
-========================
-EXAMPLE OUTPUTS (Notice how styling is injected everywhere)
-========================
-
-=== EXAMPLE 1: Architectural + Beautiful request ===
-Request: "Add a new page to build a super beautiful fictional todo app"
-Output:
-{
-  "src/App.tsx": {
-    "description": "Wire new Todo page into application routing",
-    "action": "modify",
-    "role": "app-entry",
-    "responsibilities": [
-      "Add route for Todo page",
-      "Ensure navigation transitions smoothly to the new route"
-    ],
-    "constraints": ["Keep existing routes intact"]
-  },
-  "src/pages/TodoPage.tsx": {
-    "description": "Create premium Todo page with mock functionality",
-    "action": "create",
-    "role": "page",
-    "responsibilities": [
-      "Render a stunning, modern Todo list UI using Tailwind CSS",
-      "Implement a premium dark aesthetic with glassmorphic cards and polished typography",
-      "Add Framer Motion animations for adding/removing items (e.g., smooth layout shifting)",
-      "Manage todo items with local component state for full functionality"
-    ],
-    "constraints": ["No backend integration required"]
-  }
-}
-
-========================
-NOW ANALYZE THE CURRENT REQUEST
-========================
-Request: "${userPrompt}"
-
-Output ONLY a strict JSON object mapping file paths to file contracts.
-Ensure functionality is complete AND the UI styling responsibilities are explicitly aggressive and premium.`;
+        ========================
+        INPUT DATA
+        ========================
+        1. Project Tree: ${projectTree}
+        2. Existing Exports: ${optimizedContext}
+        3. User Request: "${userPrompt}"
+            
+        ========================
+        GLOBAL DESIGN MANDATE (CRITICAL & NON-NEGOTIABLE)
+        ========================
+        Whenever the user requests new UI components, pages, or visual improvements (e.g., "beautiful", "modern"), you MUST explicitly inject premium styling responsibilities into the output. 
+        - ALWAYS include directives for modern, high-end design (e.g., "Implement premium glassmorphism UI", "Use Tailwind for a polished dark-mode aesthetic", "Add Framer Motion for smooth layout transitions").
+        - NEVER output barebones functional HTML. Functionality and stunning UI must coexist.
+            
+        ========================
+        MANDATORY: CLASSIFY THE REQUEST
+        ========================
+        Classify the user request into ONE primary type to determine the structural approach, but remember the Global Design Mandate applies to ALL of them:
+            
+        **"ui-only"** (VISUAL REFINEMENT):
+        - Keywords: beautiful, animated, modern, aesthetic, redesign.
+        - Rule: Modify existing files only. Focus heavily on animations, spacing, colors, and layout.
+            
+        **"architectural"** (NEW PAGES / COMPLEX FEATURES):
+        - Keywords: new page, todo app, new screen, routing.
+        - Rule: Create necessary files and wire routing. YOU MUST ALSO include premium UI responsibilities for every new file created.
+            
+        **"behavioral"** (LOGIC / STATE + UX):
+        - Keywords: on click, form, calculate, functionality.
+        - Rule: Add logic and state. Ensure any UI feedback (success messages, loaders) includes smooth transitions and polished styling.
+            
+        ========================
+        EXAMPLE OUTPUTS (Notice how styling is injected everywhere)
+        ========================
+            
+        === EXAMPLE 1: Architectural + Beautiful request ===
+        Request: "Add a new page to build a super beautiful fictional todo app"
+        Output:
+        {
+          "src/App.tsx": {
+            "description": "Wire new Todo page into application routing",
+            "action": "modify",
+            "role": "app-entry",
+            "responsibilities": [
+              "Add route for Todo page",
+              "Ensure navigation transitions smoothly to the new route"
+            ],
+            "constraints": ["Keep existing routes intact"]
+          },
+          "src/pages/TodoPage.tsx": {
+            "description": "Create premium Todo page with mock functionality",
+            "action": "create",
+            "role": "page",
+            "responsibilities": [
+              "Render a stunning, modern Todo list UI using Tailwind CSS",
+              "Implement a premium dark aesthetic with glassmorphic cards and polished typography",
+              "Add Framer Motion animations for adding/removing items (e.g., smooth layout shifting)",
+              "Manage todo items with local component state for full functionality"
+            ],
+            "constraints": ["No backend integration required"]
+          }
+        }
+            
+        ========================
+        NOW ANALYZE THE CURRENT REQUEST
+        ========================
+        Request: "${userPrompt}"
+            
+        Output ONLY a strict JSON object mapping file paths to file contracts.
+        Ensure functionality is complete AND the UI styling responsibilities are explicitly aggressive and premium.
+      `;
 
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: enhancedSystemPrompt },
