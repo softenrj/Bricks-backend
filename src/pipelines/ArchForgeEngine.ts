@@ -3,7 +3,7 @@
 
 //? ArchForge Engin
 // #region ---------- ArchForge ---------
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import getVectorEmbedding from "../service/vectorTransformer.js";
 import { FileVector } from "../model/file_vectors.js";
 import { IProjectFile, ProjectFile } from "../model/project_files.js";
@@ -249,6 +249,9 @@ export default class ArchForge {
         batches.push(planKeys.slice(i, i + batchSize));
       }
 
+      // Bricks MD
+      let markdownPlanner = await this.BricksMdFileProvider(projectId, userId, planedScript);
+
       const enrichedRequests = await Promise.all(
         batches.map(async (batch) => {
           const enrichedRequest = await Promise.all(
@@ -264,7 +267,6 @@ export default class ArchForge {
               };
             })
           );
-
           return enrichedRequest;
         })
       );
@@ -284,144 +286,135 @@ export default class ArchForge {
           );
         }
 
+        const enrichedFilesWithMd = [...enrichedRequests[i], markdownPlanner];
+
         const systemPrompt = codeGenPrompt;
 
         const userMessage = `
-                                    You are a Principal-Level Senior React + TypeScript Architect.
+          You are a Principal-Level Senior React + TypeScript Architect.
 
-                                    ========================
-                                    FILE GENERATION TASKS
-                                    ========================
-                                    You must generate code for EACH task listed below.
+          ========================
+          FILE GENERATION TASKS
+          ========================
+          You must generate code for EACH task listed below.
 
-                                    Each task represents ONE file that must be created or modified.
+          Each task represents ONE file that must be created or modified.
 
-                                    For every task:
-                                    - Follow the architecturalResponsibilities exactly
-                                    - Respect all constraints
-                                    - If task = "modify", rewrite the FULL file using existingFileContent as the base
-                                    - If task = "create", generate a complete new file
+          For every task:
+          - Implement EVERY item in architecturalResponsibilities as real, working, user-visible behavior — not declared, not stubbed, not partially done.
+          - Respect all constraints.
+          - If task = "modify", rewrite the FULL file using existingFileContent as the base.
+          - If task = "create", generate a complete new file.
 
-                                    Tasks:
-                                    ${JSON.stringify(enrichedRequests[i], null, 2)}
+          Tasks:
+          ${JSON.stringify(enrichedFilesWithMd, null, 2)}
 
-                                    IMPORTANT:
-                                    You MUST generate ONE output object for EACH task above.
+          IMPORTANT:
+          You MUST generate ONE output object for EACH task above.
+          The number of output files MUST match the number of tasks.
+          Return them in the same order.
 
-                                    The number of output files MUST match the number of tasks.
+          ========================
+          SHARED CONTRACTS (CRITICAL — CROSS-FILE CONSISTENCY)
+          ========================
+          The files in this changeset are generated as separate tasks but must interoperate perfectly when combined.
+          - Any prop name, type/interface name, exported function signature, or import path referenced in PLANNED FILE ROLES or ALLOWED IMPORTS below is a CONTRACT, not a suggestion.
+          - If this file consumes something exported by another planned file (or exports something another planned file will consume), match its name, shape, and export style (default vs named) EXACTLY as implied by those sections.
+          - Never invent an alternate prop name, alternate type shape, or alternate signature for anything shared across files in this changeset.
 
-                                    Return them in the same order.
-                                    ========================
-                                    PLANNED FILE ROLES
-                                    ========================
-                                    These files are part of the same change set and may not exist yet.
+          ========================
+          PLANNED FILE ROLES
+          ========================
+          These files are part of the same change set and may not exist yet.
+          ${plannedFilesContext}
 
-                                    ${plannedFilesContext}
+          ========================
+          ALLOWED IMPORTS
+          ========================
+          ${allowedImportsContext}
 
-                                    ========================
-                                    ALLOWED IMPORTS
-                                    ========================
-                                    ${allowedImportsContext}
+          ========================
+          UI DESIGN FREEDOM (TASK-SPECIFIC)
+          ========================
+          This file is a USER-FACING UI component.
 
-                                    ========================
-                                    UI DESIGN FREEDOM (TASK-SPECIFIC)
-                                    ========================
-                                    This file is a USER-FACING UI component.
-                                                
-                                    You are FREE and ENCOURAGED to use your full creativity to design
-                                    a visually outstanding, modern, clean, and professional UI.
-                                                
-                                    You MAY creatively decide:
-                                    - Layout and spacing
-                                    - Typography hierarchy
-                                    - Color palette and gradients
-                                    - Visual emphasis and depth
-                                    - Subtle animations and micro-interactions
-                                    - Hover and focus states
-                                                
-                                    The UI should feel like a real product, not tutorial code.
-                                                
-                                    BOUNDARIES:
-                                    - Do NOT add new features, logic, or flows beyond the responsibilities.
-                                    - Do NOT violate constraints.
-                                    - Any state or animation must exist ONLY to improve UI/UX.
+          You are FREE and ENCOURAGED to use your full creativity to design
+          a visually outstanding, modern, clean, and professional UI.
 
+          You MAY creatively decide:
+          - Layout and spacing
+          - Typography hierarchy
+          - Color palette and gradients
+          - Visual emphasis and depth
+          - Subtle animations and micro-interactions
+          - Hover and focus states
 
-                                    ========================
-                                    IMPLEMENTATION RULES (MANDATORY)
-                                    ========================
-                                    1. Follow IMPLEMENTATION STEPS exactly — do not add extra features.
-                                    2. Prefer the SIMPLEST working solution.
-                                    3. Code MUST compile in React (Vite) + TypeScript strict mode.
-                                    4. No unused imports, variables, props, or hooks.
-                                    5. No console.logs, TODOs, commented code, or noise.
-                                    6. Minimal comments — only where logic is non-obvious.
-                                    7. Clean naming and readable logic.
-                                    8. Styling rules:
-                                       - If creating a NEW file → Tailwind CSS only.
-                                       - If modifying an EXISTING file → preserve existing styling approach.
+          The UI should feel like a real product, not tutorial code.
 
-                                    ========================
-                                    STRICT OUTPUT FORMAT (JSON ONLY)
-                                    ========================
-                                    Return ONLY a valid JSON object.
-                                    NO markdown.
-                                    NO explanations.
-                                    NO extra text.
+          BOUNDARIES:
+          - Do NOT add new features, logic, or flows beyond the responsibilities.
+          - Do NOT violate constraints.
+          - Any state or animation must exist ONLY to improve UI/UX, and must never be a substitute for an actual required behavior (e.g. a fade-in on a "delete" button is decoration; the delete must still really remove the item from state).
 
-                                    Schema:
-                                    [{
-                                      "fileName": "ExactFileName.tsx",
-                                      "path": "src/relative/path/ExactFileName.tsx",
-                                      "content": "FULL FILE CONTENT AS A JSON STRING"
-                                    }, so on..]
-                                    Note: you have to give Array of object that is as above format
+          ========================
+          IMPLEMENTATION RULES (MANDATORY)
+          ========================
+          1. "Prefer the simplest working solution" means the least complex code that still FULLY satisfies every responsibility — never a partial, stubbed, or fake implementation of one.
+          2. Follow IMPLEMENTATION STEPS exactly — do not add extra features.
+          3. Code MUST compile in React (Vite) + TypeScript strict mode.
+          4. No unused imports, variables, props, or hooks.
+          5. No console.logs, TODOs, commented code, or noise.
+          6. Minimal comments — only where logic is non-obvious.
+          7. Clean naming and readable logic.
+          8. Styling rules:
+           - If creating a NEW file → Tailwind CSS only.
+           - If modifying an EXISTING file → preserve existing styling approach.
 
-                                    ========================
-                                    JSON SAFETY (CRITICAL)
-                                    ========================
-                                    Return ONLY valid JSON.
+          ========================
+          STRICT OUTPUT FORMAT (JSON ONLY)
+          ========================
+          Return ONLY a valid JSON array. NO markdown. NO explanations. NO extra text.
+          Output MUST start with [ and end with ]. No trailing commas.
 
-                                    Rules:
-                                    - The response MUST contain JSON only.
-                                    - Do NOT include markdown.
-                                    - Do NOT include explanations or extra text.
-                                    - Do NOT include comments.
-                                    - The output MUST start with [ and end with ].
-                                    - Each object in the array must follow the schema exactly.
-                                    - Do NOT include trailing commas.
-                                    - Ensure the JSON is valid and parseable by JSON.parse().
-                                                
-                                    Schema:
-                                                
-                                    [
-                                      {
-                                        "fileName": "ExactFileName.tsx",
-                                        "path": "src/relative/path/ExactFileName.tsx",
-                                        "content": "FULL FILE CONTENT"
-                                      }
-                                    ]
+          Schema:
+          [
+            {
+              "fileName": "ExactFileName.tsx",
+              "path": "src/relative/path/ExactFileName.tsx",
+              "content": "FULL FILE CONTENT AS A JSON-ESCAPED STRING"
+            }
+          ]
 
-                                    ========================
-                                    FINAL VERIFICATION (DO NOT SKIP)
-                                    ========================
-                                    Before returning the response, verify the following:
+          ========================
+          JSON STRING ESCAPING (READ CAREFULLY — THIS IS THE #1 CAUSE OF PARSE FAILURES)
+          ========================
+          The "content" field is raw source code containing double quotes, backticks, template literals, JSX attribute strings, and regex. To stay valid JSON:
+          - Every literal newline in the code → encode as \\n
+          - Every double quote " appearing inside the code → encode as \\"
+          - Every backslash \\ appearing inside the code (e.g. in a regex like \\d+) → encode as \\\\
+          - Backticks and template-literal syntax are not special to JSON and need no extra escaping themselves — but any " or \\ that appear inside a template literal still follow the two rules above.
+          - There must be NO literal, un-escaped newline and NO unescaped double quote anywhere inside a "content" string. This single mistake is the most common cause of JSON.parse() failure in this pipeline — check every "content" string character-by-character against these rules before moving to the next file.
 
-                                    1. The output is valid JSON.
-                                    2. The JSON array contains exactly one object for each requested task.
-                                    3. Each object strictly follows the required schema.
-                                    4. The "path" matches the requested target file.
-                                    5. The "fileName" matches the file name in the path.
-                                    6. The "content" field contains the complete file code.
-                                    7. The generated code compiles in React (Vite) with TypeScript strict mode.
-                                    8. JSX syntax is valid.
-                                    9. React Hooks rules are respected.
-                                    10. Imports only reference allowed files.
-                                    11. No unused imports, variables, or props exist.
-                                    12. No TODOs, console logs, or commented-out code remain.
-                                                
-                                    If any rule fails, FIX the issue before producing the final JSON output.
-                                `;
+          ========================
+          FINAL VERIFICATION (DO NOT SKIP)
+          ========================
+          Before returning the response, verify the following:
+
+          1. The output is valid JSON, parseable by JSON.parse(), with no unescaped quotes, backslashes, or raw newlines inside any "content" string.
+          2. The JSON array contains exactly one object for each requested task, in the same order.
+          3. Each object strictly follows the required schema.
+          4. The "path" matches the requested target file; "fileName" matches the file name in the path.
+          5. EVERY item in that task's architecturalResponsibilities maps to real, working code in "content" — none declared-but-missing, none stubbed, none half-done. If something can't be fully implemented as written, fix the code rather than silently dropping it.
+          6. Where this file shares props, types, or signatures with another planned file, they match exactly per SHARED CONTRACTS.
+          7. The generated code compiles in React (Vite) with TypeScript strict mode.
+          8. JSX syntax is valid.
+          9. React Hooks rules are respected.
+          10. Imports only reference allowed files.
+          11. No unused imports, variables, or props exist.
+          12. No TODOs, console logs, or commented-out code remain.
+
+          If any rule fails, FIX the issue before producing the final JSON output.
+        `;
 
         const messages: ChatCompletionMessageParam[] = [
           { role: "system", content: systemPrompt },
@@ -459,6 +452,14 @@ export default class ArchForge {
             generatedCodeArray = this.extractAndParseJSON(raw);
 
             for (const generatedCode of generatedCodeArray) {
+              const markdownG = generatedCode.path === "Bricks.md";
+
+              if (markdownG) {
+                markdownPlanner = {
+                  ...markdownPlanner,
+                  existingFileContent: generatedCode.content,
+                };
+              }
               const tempProcessId = processIdProvider();
 
               this.pushToUser("", projectId, userId, tempProcessId, "render");
@@ -626,6 +627,84 @@ export default class ArchForge {
       return "";
     }
   }
+
+  private static async BricksMdFileProvider(
+    projectId: Types.ObjectId,
+    userId: Types.ObjectId,
+    plannerScript: ProjectPlan
+  ): Promise<GenerationRequest> {
+    const BRICKS_PATH = "Bricks.md";
+    const now = new Date().toISOString();
+    const plannerJson = JSON.stringify(plannerScript, null, 2);
+
+    try {
+      const file = await ProjectFile.findOne({ projectId, userId, path: ".", name: "Bricks.md" });
+
+      if (!file) {
+        const defaultContent = [
+          `# Project Plan `,
+          ``,
+          `**Status**: In Progress`,
+          `**Current Batch**: 1`,
+          `**Last Updated**: ${now}`,
+          ``,
+          `## Batch 1 - Initial Requirements`,
+          "```json",
+          plannerJson,
+          "```",
+          ``,
+          `## Completed Files`,
+          `(none yet)`,
+          ``,
+        ].join("\n");
+
+        return {
+          task: "create",
+          targetFile: BRICKS_PATH,
+          architecturalResponsibilities: [
+            "Create the initial project journal exactly as provided in existingFileContent. Do not summarize or alter it.",
+          ],
+          constraints: ["Preserve formatting and JSON block exactly as given."],
+          existingFileContent: defaultContent,
+        };
+      }
+
+      const existingContent: string = file.content ?? "";
+      const batchMatch = existingContent.match(/\*\*Current Batch\*\*:\s*(\d+)/);
+      const previousBatch = batchMatch ? parseInt(batchMatch[1], 10) : 1;
+      const nextBatch = previousBatch + 1;
+
+      const instructions = [
+        `Update this project journal to reflect Batch ${nextBatch}.`,
+        `1. Update "**Current Batch**" to ${nextBatch} and "**Last Updated**" to ${now}.`,
+        `2. Keep every previous "## Batch N" section intact — this is a history log, never delete past entries.`,
+        `3. Append a new "## Batch ${nextBatch}" section containing this batch's plan as a JSON code block:\n${plannerJson}`,
+        `4. Under "## Completed Files", add the files that were generated in the previous batch (derive this from the previous batch's plan) so the next agent run knows what already exists and won't redo or conflict with it.`,
+        `5. Do not invent project history that wasn't in the existing content or this batch's plan.`,
+      ];
+
+      return {
+        task: "modify",
+        targetFile: BRICKS_PATH,
+        architecturalResponsibilities: instructions,
+        constraints: [
+          "Never delete or rewrite prior Batch sections. Only append new ones and update the status header.",
+        ],
+        existingFileContent: existingContent,
+      };
+    } catch (error) {
+      console.error("Error while getting Bricks.md: ", error);
+      return {
+        task: "modify",
+        targetFile: BRICKS_PATH,
+        architecturalResponsibilities: [
+          "Could not load existing project history due to an internal error — append a note flagging this gap, do not fabricate missing history.",
+        ],
+        constraints: [""],
+        existingFileContent: `# Project Plan \n\n**Status**: Unknown (history load failed)\n**Last Updated**: ${now}\n`,
+      };
+    }
+  }
   // #endregion
 
   private static pushToUser(
@@ -662,7 +741,7 @@ export default class ArchForge {
     try {
       const processId = processIdProvider();
       this.pushToUser(
-        "🧠 Analyzing project and planning required changes...",
+        "Analyzing project and planning required changes...",
         projectId,
         userId,
         processId,
@@ -670,7 +749,6 @@ export default class ArchForge {
       );
       const optimizedContext = this.formatContextForPlanner(fileContexts);
 
-      // ENHANCED: Merged functional architecture with extreme UI/UX mandates
       const enhancedSystemPrompt = `You are a Principal-Level Software Architect AND Elite Product Designer.
 
         ========================
@@ -679,35 +757,57 @@ export default class ArchForge {
         1. Project Tree: ${projectTree}
         2. Existing Exports: ${optimizedContext}
         3. User Request: "${userPrompt}"
-            
+
         ========================
         GLOBAL DESIGN MANDATE (CRITICAL & NON-NEGOTIABLE)
         ========================
-        Whenever the user requests new UI components, pages, or visual improvements (e.g., "beautiful", "modern"), you MUST explicitly inject premium styling responsibilities into the output. 
+        Whenever the user requests new UI components, pages, or visual improvements (e.g., "beautiful", "modern"), you MUST explicitly inject premium styling responsibilities into the output.
         - ALWAYS include directives for modern, high-end design (e.g., "Implement premium glassmorphism UI", "Use Tailwind for a polished dark-mode aesthetic", "Add Framer Motion for smooth layout transitions").
         - NEVER output barebones functional HTML. Functionality and stunning UI must coexist.
-            
+
+        ========================
+        GLOBAL FUNCTIONALITY MANDATE (CRITICAL & NON-NEGOTIABLE — EQUAL PRIORITY TO DESIGN)
+        ========================
+        Beautiful UI on top of broken or incomplete logic is a FAILED output. Treat this with the same rigor as the Design Mandate.
+        - ALWAYS fully resolve every verb/feature implied by the user's request into concrete, working behavior — not just the ones explicitly spelled out. If the user names an app archetype (todo list, calculator, login form, cart, kanban board, etc.), you MUST infer and include the full standard operation set for that archetype, even if the user only described it in one sentence.
+          - Example inference rule: "todo app" implies add, toggle-complete, delete, edit, and an empty state — ALL of them, not just "add".
+        - ALWAYS specify *how* state is managed and persisted (local component state, localStorage, context, backend) — never leave this implicit as "manage with state."
+        - ALWAYS account for edge cases relevant to the feature: empty states, validation (e.g. don't allow blank submissions), loading states, error states, disabled/active button states.
+        - NEVER wire a UI element (button, input, toggle) that has no real handler behind it. No dead clicks, no decorative-only interactivity, no "onClick={() => {}}" placeholders.
+        - NEVER let styling responsibilities crowd out or replace functional responsibilities in the "responsibilities" array — both must be present, as distinct, specific bullet points.
+
         ========================
         MANDATORY: CLASSIFY THE REQUEST
         ========================
-        Classify the user request into ONE primary type to determine the structural approach, but remember the Global Design Mandate applies to ALL of them:
-            
+        Classify the user request into ONE primary type to determine the structural approach. Both mandates above apply to ALL of them:
+
         **"ui-only"** (VISUAL REFINEMENT):
         - Keywords: beautiful, animated, modern, aesthetic, redesign.
-        - Rule: Modify existing files only. Focus heavily on animations, spacing, colors, and layout.
-            
+        - Rule: Modify existing files only. Focus heavily on animations, spacing, colors, and layout. Do NOT change or strip out any existing functional behavior while restyling — explicitly note "preserve existing functionality" in constraints.
+
         **"architectural"** (NEW PAGES / COMPLEX FEATURES):
         - Keywords: new page, todo app, new screen, routing.
-        - Rule: Create necessary files and wire routing. YOU MUST ALSO include premium UI responsibilities for every new file created.
-            
+        - Rule: Create necessary files and wire routing. Every new file must carry BOTH premium UI responsibilities AND a complete, granular functional spec (see Functionality Mandate above).
+
         **"behavioral"** (LOGIC / STATE + UX):
         - Keywords: on click, form, calculate, functionality.
-        - Rule: Add logic and state. Ensure any UI feedback (success messages, loaders) includes smooth transitions and polished styling.
-            
+        - Rule: Add logic and state. Specify exact state shape and transitions. Ensure any UI feedback (success messages, loaders, errors) includes smooth transitions and polished styling.
+
         ========================
-        EXAMPLE OUTPUTS (Notice how styling is injected everywhere)
+        PRE-OUTPUT SELF-CHECK (DO NOT SKIP, DO NOT OUTPUT THIS SECTION)
         ========================
-            
+        Before writing the final JSON, silently verify for every file in your plan:
+        1. Can a real user perform every action implied by their request, end-to-end, without a broken or missing handler?
+        2. Does every interactive element have a named, specific behavior attached (not "handle click" — say what happens)?
+        3. Is there an explicit empty/error/loading state where relevant?
+        4. Is state persistence explicitly named (local state / localStorage / backend)?
+        5. Does the file ALSO carry premium styling responsibilities distinct from the functional ones?
+        If any answer is "no" or "vague," revise the responsibilities array before finalizing. Only output the final JSON — never show this checklist to the user.
+
+        ========================
+        EXAMPLE OUTPUTS (Notice styling AND functionality are both injected, as separate concrete bullets)
+        ========================
+
         === EXAMPLE 1: Architectural + Beautiful request ===
         Request: "Add a new page to build a super beautiful fictional todo app"
         Output:
@@ -723,39 +823,42 @@ export default class ArchForge {
             "constraints": ["Keep existing routes intact"]
           },
           "src/pages/TodoPage.tsx": {
-            "description": "Create premium Todo page with mock functionality",
+            "description": "Create premium, fully functional Todo page",
             "action": "create",
             "role": "page",
             "responsibilities": [
-              "Render a stunning, modern Todo list UI using Tailwind CSS",
-              "Implement a premium dark aesthetic with glassmorphic cards and polished typography",
-              "Add Framer Motion animations for adding/removing items (e.g., smooth layout shifting)",
-              "Manage todo items with local component state for full functionality"
+              "Render a stunning, modern Todo list UI using Tailwind CSS with a glassmorphic dark aesthetic",
+              "Add Framer Motion layout animations when items are added or removed",
+              "Implement add-todo via text input + Enter key or button click, with validation that blocks empty/whitespace-only submissions",
+              "Implement toggle-complete on each item with a strikethrough/checkbox animation",
+              "Implement delete-todo per item with an exit animation",
+              "Implement inline edit-todo on double-click or edit icon",
+              "Persist todo list to localStorage so items survive a page refresh",
+              "Render a distinct, styled empty state when the list has zero items"
             ],
-            "constraints": ["No backend integration required"]
+            "constraints": ["No backend integration required", "All listed operations must be fully wired and working, not mocked"]
           }
         }
-            
+
         ========================
         NOW ANALYZE THE CURRENT REQUEST
         ========================
         Request: "${userPrompt}"
-            
+
         Output ONLY a strict JSON object mapping file paths to file contracts.
-        Ensure functionality is complete AND the UI styling responsibilities are explicitly aggressive and premium.
+        Every file's "responsibilities" array must contain BOTH premium UI styling bullets AND granular, fully-working functional bullets covering every operation implied by the request and its app archetype. Vague functional bullets (e.g. "manage state", "handle logic") are not acceptable — be specific about the exact behavior.
       `;
 
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: enhancedSystemPrompt },
         {
-          // FIX: Removed the word "MINIMAL" which was killing your design prompt
           role: "user",
           content: `Based on the project tree and request, provide a COMPLETE, fully functional, and highly styled plan for: "${userPrompt}"`,
         },
       ];
 
       const completion = await AI_MODULE.chat.completions.create({
-        model: "llama-3.1-8b-instant",
+        model: "llama-3.3-70b-versatile",
         messages: messages,
         temperature: 0.1, // Keep this low so JSON formatting is strict, the prompt now handles the creativity.
         response_format: { type: "json_object" },
