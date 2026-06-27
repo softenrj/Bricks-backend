@@ -13,7 +13,7 @@ import { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions.
 import { ArchEnginStatusSocket } from "../sockets/ArchEnginProcess.js";
 import { processIdProvider, uIdProvider } from "../service/user.uidProvider.js";
 import { archSSEmanager } from "../serversideevents/ArchSSEManager.js";
-import { codeGenPrompt, folderStructurePrompt, promptCraftMaster } from "./ArchPrompts.js";
+import { codeGenPrompt } from "./ArchPrompts.js";
 import { Snapshot, snapshotEnum } from "../model/snapshot.js";
 import { snapShotFile } from "../model/snapshotfile.js";
 
@@ -250,7 +250,32 @@ export default class ArchForge {
       }
 
       // Bricks MD
-      let markdownPlanner = await this.BricksMdFileProvider(projectId, userId, planedScript);
+      let markdownPlanner = await this.BricksMdFileProvider(
+        projectId,
+        userId,
+        planedScript,
+        batches.length
+      );
+
+      const markdownCleanerRequest = {
+        task: "modify",
+        targetFile: "Bricks.md",
+        architecturalResponsibilities: [
+          "ROLE: You are the Finalization Agent. The current multi-batch project has successfully concluded.",
+          "ACTION: Your sole responsibility is to perform a hard reset on this file to prepare the workspace for future, entirely unrelated tasks.",
+          "STEP 1: Delete all existing content, including all metadata, completed files, and previous Batch Logs.",
+          "STEP 2: Output ONLY a fresh, clean slate template exactly as follows:",
+          "# Project State Journal (Bricks.md)\n\n**Status**: Ready for New Task\n**Last Updated**: " +
+            new Date().toISOString() +
+            "\n\n> **System Directive**: Awaiting new project plan.",
+        ],
+        constraints: [
+          "HARD WIPE: Do not preserve any history, JSON blocks, or previous batch information. The old task is completely finished.",
+          "NO APOLOGIES: Output strictly the new markdown text provided in STEP 2. Do not add introductory or concluding conversational text.",
+          "NO HALLUCINATION: Do not invent a new plan or anticipate what the next task will be.",
+        ],
+        existingFileContent: null,
+      } as GenerationRequest;
 
       const enrichedRequests = await Promise.all(
         batches.map(async (batch) => {
@@ -287,6 +312,7 @@ export default class ArchForge {
         }
 
         const enrichedFilesWithMd = [...enrichedRequests[i], markdownPlanner];
+        if (i === enrichedRequests.length - 1) enrichedFilesWithMd.push(markdownCleanerRequest);
 
         const systemPrompt = codeGenPrompt;
 
@@ -327,6 +353,7 @@ export default class ArchForge {
           ========================
           These files are part of the same change set and may not exist yet.
           ${plannedFilesContext}
+          **Batch Number**: ${i}
 
           ========================
           ALLOWED IMPORTS
@@ -345,7 +372,7 @@ export default class ArchForge {
           - Layout and spacing
           - Typography hierarchy
           - Color palette and gradients
-          - Visual emphasis and depth
+          - Visual emphasis, depth, and iconography (must use lucide-react)
           - Subtle animations and micro-interactions
           - Hover and focus states
 
@@ -369,6 +396,7 @@ export default class ArchForge {
           8. Styling rules:
            - If creating a NEW file → Tailwind CSS only.
            - If modifying an EXISTING file → preserve existing styling approach.
+          9. Iconography (STRICT): You MUST use 'lucide-react' for all icons. Do not use raw SVGs, Heroicons, FontAwesome, or any other library. Import components directly (e.g., \`import { Menu, X } from 'lucide-react';\`).
 
           ========================
           STRICT OUTPUT FORMAT (JSON ONLY)
@@ -412,6 +440,7 @@ export default class ArchForge {
           10. Imports only reference allowed files.
           11. No unused imports, variables, or props exist.
           12. No TODOs, console logs, or commented-out code remain.
+          13. All icons used are imported exclusively from 'lucide-react'.
 
           If any rule fails, FIX the issue before producing the final JSON output.
         `;
@@ -631,7 +660,8 @@ export default class ArchForge {
   private static async BricksMdFileProvider(
     projectId: Types.ObjectId,
     userId: Types.ObjectId,
-    plannerScript: ProjectPlan
+    plannerScript: ProjectPlan,
+    batches: number
   ): Promise<GenerationRequest> {
     const BRICKS_PATH = "Bricks.md";
     const now = new Date().toISOString();
@@ -639,58 +669,76 @@ export default class ArchForge {
 
     try {
       const file = await ProjectFile.findOne({ projectId, userId, path: ".", name: "Bricks.md" });
+      const defaultContent = [
+        `# Project State Journal (Bricks.md)`,
+        `> **System Directive**: This file is the immutable source of truth for AI context across batches.`,
+        ``,
+        `## Metadata`,
+        `**Status**: In Progress`,
+        `**Current Batch**: 1`,
+        `**Total Batches**: ${batches}`,
+        `**Last Updated**: ${now}`,
+        ``,
+        `## Architecture Contracts`,
+        `*To be defined by system.*`,
+        ``,
+        `## File Registry`,
+        `### Completed Files`,
+        `*(None yet)*`,
+        ``,
+        `### Pending / Next Steps`,
+        `*(Awaiting batch completion)*`,
+        ``,
+        `## Batch Log`,
+        `### Batch 1 - Initial Requirements`,
+        "```json",
+        plannerJson,
+        "```",
+        ``,
+      ].join("\n");
 
       if (!file) {
-        const defaultContent = [
-          `# Project Plan `,
-          ``,
-          `**Status**: In Progress`,
-          `**Current Batch**: 1`,
-          `**Last Updated**: ${now}`,
-          ``,
-          `## Batch 1 - Initial Requirements`,
-          "```json",
-          plannerJson,
-          "```",
-          ``,
-          `## Completed Files`,
-          `(none yet)`,
-          ``,
-        ].join("\n");
-
         return {
           task: "create",
           targetFile: BRICKS_PATH,
           architecturalResponsibilities: [
-            "Create the initial project journal exactly as provided in existingFileContent. Do not summarize or alter it.",
+            "ROLE: You are the strict File Initializer.",
+            "ACTION: Output the exact provided existingFileContent into the target file.",
+            "NO MODIFICATION: Do not summarize, alter, or add any introductory text. Output only the raw markdown.",
           ],
-          constraints: ["Preserve formatting and JSON block exactly as given."],
+          constraints: [
+            "ABSOLUTE: Preserve all formatting and JSON blocks exactly as given.",
+            "NO HALLUCINATION: Do not invent or add any files to the File Registry yet.",
+          ],
           existingFileContent: defaultContent,
         };
       }
 
       const existingContent: string = file.content ?? "";
+
       const batchMatch = existingContent.match(/\*\*Current Batch\*\*:\s*(\d+)/);
       const previousBatch = batchMatch ? parseInt(batchMatch[1], 10) : 1;
       const nextBatch = previousBatch + 1;
 
-      const instructions = [
-        `Update this project journal to reflect Batch ${nextBatch}.`,
-        `1. Update "**Current Batch**" to ${nextBatch} and "**Last Updated**" to ${now}.`,
-        `2. Keep every previous "## Batch N" section intact — this is a history log, never delete past entries.`,
-        `3. Append a new "## Batch ${nextBatch}" section containing this batch's plan as a JSON code block:\n${plannerJson}`,
-        `4. Under "## Completed Files", add the files that were generated in the previous batch (derive this from the previous batch's plan) so the next agent run knows what already exists and won't redo or conflict with it.`,
-        `5. Do not invent project history that wasn't in the existing content or this batch's plan.`,
-      ];
-
       return {
         task: "modify",
         targetFile: BRICKS_PATH,
-        architecturalResponsibilities: instructions,
-        constraints: [
-          "Never delete or rewrite prior Batch sections. Only append new ones and update the status header.",
+        architecturalResponsibilities: [
+          `ROLE: You are the strict State Manager of this project. Your ONLY job is to safely update this journal.`,
+          `STEP 1 - METADATA UPDATE: Change "**Current Batch**" to ${nextBatch} and update "**Last Updated**" to ${now}. Leave "**Total Batches**" untouched.`,
+          `STEP 2 - REGISTRY UPDATE: Under "### Completed Files", list the exact files targeted in Batch ${previousBatch}. Migrate them from 'Pending' if necessary. Only list files explicitly found in the previous batch's JSON.`,
+          `STEP 3 - APPEND NEW BATCH: Append a new section '### Batch ${nextBatch}' at the absolute bottom of the document containing this exact JSON block:\n\`\`\`json\n${plannerJson}\n\`\`\``,
+          `STEP 4 - FULL OUTPUT: You must output the ENTIRE updated file. Do not truncate.`,
         ],
-        existingFileContent: existingContent,
+        constraints: [
+          "ANTI-HALLUCINATION: Never invent file names, project history, or architectures that are not explicitly present in the provided context or JSON.",
+          "IMMUTABILITY: Never modify, summarize, or delete past '### Batch N' sections. The Batch Log is STRICTLY append-only.",
+          "NO LAZY OUTPUT: You are forbidden from using placeholders like '...rest of the file...' or '...previous batches intact...'. You must output the full context.",
+          "FORMATTING: Ensure the injected JSON block is properly wrapped in valid markdown code fences.",
+        ],
+        existingFileContent: file.content?.includes("Ready for New Task")
+          ? defaultContent
+          : (file.content ?? ""),
       };
     } catch (error) {
       console.error("Error while getting Bricks.md: ", error);
@@ -698,10 +746,14 @@ export default class ArchForge {
         task: "modify",
         targetFile: BRICKS_PATH,
         architecturalResponsibilities: [
-          "Could not load existing project history due to an internal error — append a note flagging this gap, do not fabricate missing history.",
+          "SYSTEM ERROR RECOVERY: A system error prevented loading historical project context.",
+          `ACTION: Create an emergency batch append noting the time of failure (${now}) and append the new JSON plan.`,
         ],
-        constraints: [""],
-        existingFileContent: `# Project Plan \n\n**Status**: Unknown (history load failed)\n**Last Updated**: ${now}\n`,
+        constraints: [
+          "DO NOT HALLUCINATE PAST HISTORY. Acknowledge the missing history explicitly.",
+          "Output the provided JSON exactly as given.",
+        ],
+        existingFileContent: `# Project State Journal (Bricks.md)\n\n**Status**: Warning (History Load Failed)\n**Last Updated**: ${now}\n\n> **System Note**: Previous history could not be fetched due to an internal error.\n\n## Batch Log\n### Emergency Append\n\`\`\`json\n${plannerJson}\n\`\`\`\n`,
       };
     }
   }
