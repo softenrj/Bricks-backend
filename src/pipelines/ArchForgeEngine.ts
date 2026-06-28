@@ -39,16 +39,18 @@ interface ArchFileContext {
 }
 export type FileAction = "create" | "modify" | "retain";
 
-type ProjectPlan = {
-  [filePath: string]: {
+type ProjectPlan = Record<
+  string,
+  {
     action: "create" | "modify";
     role: "app-entry" | "page" | "layout" | "component" | "state" | "utility";
     responsibilities: string[];
     constraints?: string[];
     inputs?: string[];
     outputs?: string[];
-  };
-};
+    executionOrder: number;
+  }
+>;
 
 export interface ArchProjectCode {
   path: string;
@@ -62,13 +64,13 @@ interface snaps {
   action: string;
 }
 
-type GenerationRequest = {
+interface GenerationRequest {
   task: "create" | "modify";
   targetFile: string;
   architecturalResponsibilities: string[];
   constraints: string[];
   existingFileContent: string | null;
-};
+}
 export default class ArchForge {
   public static async _process_(processArgs: Process) {
     //! assume there is text only (Version 1)
@@ -200,12 +202,8 @@ export default class ArchForge {
     jobId: string
   ): Promise<{ snapv1Id: string; snapv2Id: string } | null> {
     try {
-      let planKeys = Object.entries(planedScript)
-        .sort(([, a], [, b]) => {
-          if (a.action === "create" && b.action === "modify") return -1;
-          if (a.action === "modify" && b.action === "create") return 1;
-          return 0;
-        })
+      const planKeys = Object.entries(planedScript)
+        .sort(([, a], [, b]) => a.executionOrder - b.executionOrder)
         .map(([path]) => path);
 
       const allowedImportsContext = fileContexts
@@ -320,6 +318,26 @@ export default class ArchForge {
           You are a Principal-Level Senior React + TypeScript Architect.
 
           ========================
+          TOP PRIORITY: RELIABILITY OVER CREATIVITY
+          ========================
+          The person using this output CANNOT debug code. That means "it renders correctly on the very first try, with zero runtime errors" is the #1 success metric — above visual impressiveness, above cleverness, above anything else in this prompt.
+          - When in doubt between a simple, boring, obviously-correct approach and a more impressive/creative one, ALWAYS choose the simple one.
+          - Do NOT use animation libraries (Framer Motion, react-spring, etc.) unless a task explicitly requires complex animation. For hover/transition/micro-interaction polish, use plain Tailwind utilities only (transition, duration-*, hover:, focus:, ease-*). These cannot throw at runtime; animation libraries can (mismatched AnimatePresence keys, missing exit states, ref issues) and you will not be present to fix it.
+          - Avoid clever patterns (HOCs, render props, dynamic component maps, complex generics, conditional hooks) in favor of plain, direct, linear code — even if it's a few lines longer. Obvious code is debuggable code; clever code is not, for this user.
+          - Never add a feature, abstraction, or visual flourish that isn't explicitly required by architecturalResponsibilities, no matter how good it would look.
+
+          ========================
+          IMPORT EXTENSION MANDATE (ABSOLUTE — NO EXCEPTIONS, NO OBJECTIONS, CRITICAL)
+          ========================
+          EVERY relative import of a project file (any path starting with "./" or "../") MUST include the explicit file extension. This is non-negotiable regardless of standard TypeScript convention.
+          - Importing a React component file → MUST end in ".tsx". Example: \`import List from "./components/List.tsx";\` — NOT \`from "./components/List"\`.
+          - Importing a non-component file (hook, util, types, constants) → MUST end in ".ts" if that file has no JSX, or ".tsx" if it does.
+          - This rule applies to default imports, named imports, and type-only imports alike.
+          - This rule does NOT apply to npm package imports (e.g. "react", "lucide-react", "react-dom") — those stay exactly as their package name, with no extension.
+          - When importing a file listed in PLANNED FILE ROLES or ALLOWED IMPORTS, take the extension directly from that file's actual filename in this changeset — do not guess or omit it.
+          - Never write a relative import without an extension. There is no scenario in this task where an extensionless relative import is acceptable.
+
+          ========================
           FILE GENERATION TASKS
           ========================
           You must generate code for EACH task listed below.
@@ -329,7 +347,7 @@ export default class ArchForge {
           For every task:
           - Implement EVERY item in architecturalResponsibilities as real, working, user-visible behavior — not declared, not stubbed, not partially done.
           - Respect all constraints.
-          - If task = "modify", rewrite the FULL file using existingFileContent as the base.
+          - If task = "modify", output the FULL updated file. **CRITICAL:** You MUST preserve all existing functionality, exports, and logic from
           - If task = "create", generate a complete new file.
 
           Tasks:
@@ -341,12 +359,13 @@ export default class ArchForge {
           Return them in the same order.
 
           ========================
-          SHARED CONTRACTS (CRITICAL — CROSS-FILE CONSISTENCY)
+          SHARED CONTRACTS (CRITICAL — CROSS-FILE CONSISTENCY, #1 CAUSE OF "DOESN'T RENDER")
           ========================
-          The files in this changeset are generated as separate tasks but must interoperate perfectly when combined.
+          The files in this changeset are generated as separate tasks but must interoperate perfectly when combined. A mismatched export/prop here is the single most common reason generated code fails to render.
           - Any prop name, type/interface name, exported function signature, or import path referenced in PLANNED FILE ROLES or ALLOWED IMPORTS below is a CONTRACT, not a suggestion.
+          - Before writing an import statement for any file listed in PLANNED FILE ROLES, restate to yourself (in your reasoning, not in the output): "this file exports ___ as a [default/named] export, with this exact shape: ___, and its filename extension is ___" — then write the import to match that EXACTLY, including the extension per the IMPORT EXTENSION MANDATE above. Do not guess.
           - If this file consumes something exported by another planned file (or exports something another planned file will consume), match its name, shape, and export style (default vs named) EXACTLY as implied by those sections.
-          - Never invent an alternate prop name, alternate type shape, or alternate signature for anything shared across files in this changeset.
+          - Never invent an alternate prop name, alternate type shape, alternate signature, or alternate export style (default vs named) for anything shared across files in this changeset.
 
           ========================
           PLANNED FILE ROLES
@@ -361,27 +380,21 @@ export default class ArchForge {
           ${allowedImportsContext}
 
           ========================
-          UI DESIGN FREEDOM (TASK-SPECIFIC)
+          UI DESIGN (TASK-SPECIFIC — STILL BOUND BY THE RELIABILITY MANDATE ABOVE)
           ========================
-          This file is a USER-FACING UI component.
+          This file is a USER-FACING UI component. Make it look clean, modern, and professional using Tailwind — good spacing, clear typography hierarchy, a sensible color palette, icons from lucide-react.
 
-          You are FREE and ENCOURAGED to use your full creativity to design
-          a visually outstanding, modern, clean, and professional UI.
+          You MAY decide layout, spacing, typography, color, and iconography.
 
-          You MAY creatively decide:
-          - Layout and spacing
-          - Typography hierarchy
-          - Color palette and gradients
-          - Visual emphasis, depth, and iconography (must use lucide-react)
-          - Subtle animations and micro-interactions
-          - Hover and focus states
+          You MAY use simple Tailwind-only hover/focus/transition states.
 
-          The UI should feel like a real product, not tutorial code.
+          You MAY NOT:
+          - Add new features, logic, or flows beyond the responsibilities.
+          - Violate constraints.
+          - Use animation libraries (see RELIABILITY MANDATE above).
+          - Add visual flourish whose only purpose is to look impressive rather than to support a required behavior. A fade-in is decoration; a delete button must actually delete from state regardless of any decoration on it.
 
-          BOUNDARIES:
-          - Do NOT add new features, logic, or flows beyond the responsibilities.
-          - Do NOT violate constraints.
-          - Any state or animation must exist ONLY to improve UI/UX, and must never be a substitute for an actual required behavior (e.g. a fade-in on a "delete" button is decoration; the delete must still really remove the item from state).
+          The UI should feel like a real, clean product — not a flashy demo and not tutorial-bare.
 
           ========================
           IMPLEMENTATION RULES (MANDATORY)
@@ -390,13 +403,14 @@ export default class ArchForge {
           2. Follow IMPLEMENTATION STEPS exactly — do not add extra features.
           3. Code MUST compile in React (Vite) + TypeScript strict mode.
           4. No unused imports, variables, props, or hooks.
-          5. No console.logs, TODOs, commented code, or noise.
-          6. Minimal comments — only where logic is non-obvious.
+          5. ZERO comments. None. Not "minimal," not "only where non-obvious" — zero. If the logic needs explaining, simplify the logic instead of explaining it.
+          6. No console.logs, TODOs, or commented-out code.
           7. Clean naming and readable logic.
           8. Styling rules:
            - If creating a NEW file → Tailwind CSS only.
            - If modifying an EXISTING file → preserve existing styling approach.
-          9. Iconography (STRICT): You MUST use 'lucide-react' for all icons. Do not use raw SVGs, Heroicons, FontAwesome, or any other library. Import components directly (e.g., \`import { Menu, X } from 'lucide-react';\`).
+          9. Iconography (STRICT): You MUST use 'lucide-react' for all icons. Do not use raw SVGs, Heroicons, FontAwesome, or any other library. Import components directly (e.g., \`import { Menu, X } from 'lucide-react';\`). Only use icon names you are certain exist in lucide-react; if unsure, use a well-known icon (e.g. Plus, X, Check, ChevronRight) rather than guessing an obscure name.
+          10. Relative imports MUST carry an explicit extension (.tsx or .ts) per the IMPORT EXTENSION MANDATE — package imports remain extensionless.
 
           ========================
           STRICT OUTPUT FORMAT (JSON ONLY)
@@ -433,14 +447,16 @@ export default class ArchForge {
           3. Each object strictly follows the required schema.
           4. The "path" matches the requested target file; "fileName" matches the file name in the path.
           5. EVERY item in that task's architecturalResponsibilities maps to real, working code in "content" — none declared-but-missing, none stubbed, none half-done. If something can't be fully implemented as written, fix the code rather than silently dropping it.
-          6. Where this file shares props, types, or signatures with another planned file, they match exactly per SHARED CONTRACTS.
+          6. Where this file shares props, types, or signatures with another planned file, they match exactly per SHARED CONTRACTS — re-check export style (default vs named) specifically, since this is the most common mismatch.
           7. The generated code compiles in React (Vite) with TypeScript strict mode.
-          8. JSX syntax is valid.
-          9. React Hooks rules are respected.
-          10. Imports only reference allowed files.
+          8. JSX syntax is valid — every opening tag has a matching closing tag, every conditional render returns a valid node or null, no stray fragments.
+          9. React Hooks rules are respected: no hooks inside conditionals/loops, all dependencies declared.
+          10. Imports only reference allowed files, and no animation library is imported anywhere.
           11. No unused imports, variables, or props exist.
-          12. No TODOs, console logs, or commented-out code remain.
-          13. All icons used are imported exclusively from 'lucide-react'.
+          12. ZERO comments, no TODOs, no console logs, no commented-out code remain anywhere.
+          13. All icons used are imported exclusively from 'lucide-react', and every icon name used actually exists in that library.
+          14. Mentally trace rendering this component with default/empty props: does it throw, or render cleanly?
+          15. EVERY relative import in this file ends in an explicit ".tsx" or ".ts" extension — scan every "import ... from" line in the content string one by one and confirm none are missing it.
 
           If any rule fails, FIX the issue before producing the final JSON output.
         `;
@@ -486,6 +502,7 @@ export default class ArchForge {
               if (markdownG) {
                 markdownPlanner = {
                   ...markdownPlanner,
+                  targetFile: "Bricks.md",
                   existingFileContent: generatedCode.content,
                 };
               }
@@ -608,6 +625,7 @@ export default class ArchForge {
           responsibilities: [`Auto-generated dependency for ${generated.path}`],
           action: "create",
           role: "utility",
+          executionOrder: 0,
         };
       }
     }
@@ -671,7 +689,7 @@ export default class ArchForge {
       const file = await ProjectFile.findOne({ projectId, userId, path: ".", name: "Bricks.md" });
       const defaultContent = [
         `# Project State Journal (Bricks.md)`,
-        `> **System Directive**: This file is the immutable source of truth for AI context across batches.`,
+        `> **System Directive**: This file maps the dependency graph and architectural history.`,
         ``,
         `## Metadata`,
         `**Status**: In Progress`,
@@ -679,44 +697,34 @@ export default class ArchForge {
         `**Total Batches**: ${batches}`,
         `**Last Updated**: ${now}`,
         ``,
-        `## Architecture Contracts`,
-        `*To be defined by system.*`,
-        ``,
-        `## File Registry`,
-        `### Completed Files`,
+        `## Export Registry (Compressed History)`,
+        `*Format per entry: - \`path\`: exports \`Name\` (default|named) — propsOrSignature — one-line purpose*`,
+        `*This registry is the ONLY source of truth for what already exists. It must contain enough detail that another AI could import from these files WITHOUT opening them.*`,
         `*(None yet)*`,
         ``,
-        `### Pending / Next Steps`,
-        `*(Awaiting batch completion)*`,
-        ``,
-        `## Batch Log`,
-        `### Batch 1 - Initial Requirements`,
-        "```json",
-        plannerJson,
-        "```",
+        `## Current Batch Target`,
+        `### Batch 1`,
+        "(None yet)",
         ``,
       ].join("\n");
 
-      if (!file) {
+      if (!file || file.content?.includes("Ready for New Task")) {
         return {
           task: "create",
-          targetFile: BRICKS_PATH,
+          targetFile: BRICKS_PATH, // ENFORCED BELOW — AI output for this field is ignored
           architecturalResponsibilities: [
             "ROLE: You are the strict File Initializer.",
-            "ACTION: Output the exact provided existingFileContent into the target file.",
-            "NO MODIFICATION: Do not summarize, alter, or add any introductory text. Output only the raw markdown.",
+            "ACTION: Output the exact provided existingFileContent into the target file without modifications.",
           ],
           constraints: [
-            "ABSOLUTE: Preserve all formatting and JSON blocks exactly as given.",
-            "NO HALLUCINATION: Do not invent or add any files to the File Registry yet.",
+            "**CRITICAL — NON-NEGOTIABLE**: The target path for this file is LOCKED and is supplied by the system, not chosen by you. Whatever value you put in the path/fileName field WILL BE DISCARDED and overwritten by the system. Do not waste effort deciding it — just echo the content back exactly.",
           ],
           existingFileContent: defaultContent,
         };
       }
 
       const existingContent: string = file.content ?? "";
-
-      const batchMatch = existingContent.match(/\*\*Current Batch\*\*:\s*(\d+)/);
+      const batchMatch = /\*\*Current Batch\*\*:\s*(\d+)/.exec(existingContent);
       const previousBatch = batchMatch ? parseInt(batchMatch[1], 10) : 1;
       const nextBatch = previousBatch + 1;
 
@@ -724,21 +732,21 @@ export default class ArchForge {
         task: "modify",
         targetFile: BRICKS_PATH,
         architecturalResponsibilities: [
-          `ROLE: You are the strict State Manager of this project. Your ONLY job is to safely update this journal.`,
-          `STEP 1 - METADATA UPDATE: Change "**Current Batch**" to ${nextBatch} and update "**Last Updated**" to ${now}. Leave "**Total Batches**" untouched.`,
-          `STEP 2 - REGISTRY UPDATE: Under "### Completed Files", list the exact files targeted in Batch ${previousBatch}. Migrate them from 'Pending' if necessary. Only list files explicitly found in the previous batch's JSON.`,
-          `STEP 3 - APPEND NEW BATCH: Append a new section '### Batch ${nextBatch}' at the absolute bottom of the document containing this exact JSON block:\n\`\`\`json\n${plannerJson}\n\`\`\``,
-          `STEP 4 - FULL OUTPUT: You must output the ENTIRE updated file. Do not truncate.`,
+          `ROLE: You are the strict Context Compressor and State Manager.`,
+          `STEP 1 - METADATA: Update "**Current Batch**" to ${nextBatch} and "**Last Updated**" to ${now}.`,
+          `STEP 2 - COMPRESS HISTORY: Look at the previous 'Current Batch Target' JSON. For EVERY file in it, append ONE bullet under '## Export Registry (Compressed History)' using EXACTLY this format: "- \`<path>\`: exports \`<ExportName>\` (default|named) — props: <key props/signature, or 'none'> — <one-line purpose>". This registry is what future batches rely on to import correctly without re-reading the source — vague purpose-only bullets are USELESS, you must preserve the actual export name and shape.`,
+          `STEP 3 - DELETE OLD JSON: Completely remove the previous Batch JSON block to save context window tokens — its information now lives in the registry bullets from STEP 2.`,
+          `STEP 4 - APPEND NEW TARGET: Create '### Batch ${nextBatch}' under '## Current Batch Target' and insert this exact JSON:\n\`\`\`json\n${plannerJson}\n\`\`\``,
+          `STEP 5 - OUTPUT: Return the full, newly compressed markdown document.`,
         ],
         constraints: [
-          "ANTI-HALLUCINATION: Never invent file names, project history, or architectures that are not explicitly present in the provided context or JSON.",
-          "IMMUTABILITY: Never modify, summarize, or delete past '### Batch N' sections. The Batch Log is STRICTLY append-only.",
-          "NO LAZY OUTPUT: You are forbidden from using placeholders like '...rest of the file...' or '...previous batches intact...'. You must output the full context.",
-          "FORMATTING: Ensure the injected JSON block is properly wrapped in valid markdown code fences.",
+          "ANTI-HALLUCINATION: Never invent files, exports, or props that weren't in the previous batch JSON.",
+          "STRICT COMPRESSION: Do not retain old JSON objects. Each Export Registry bullet must follow the exact format given in STEP 2 — no free-form descriptions.",
+          "**CRITICAL — NON-NEGOTIABLE**: The target path for this file is LOCKED and is supplied by the system, not chosen by you. Whatever value you put in the path/fileName field WILL BE DISCARDED and overwritten by the system. Do not waste effort deciding it — just return the markdown content.",
         ],
-        existingFileContent: file.content?.includes("Ready for New Task")
+        existingFileContent: existingContent.toLowerCase().includes("ready for new task")
           ? defaultContent
-          : (file.content ?? ""),
+          : existingContent,
       };
     } catch (error) {
       console.error("Error while getting Bricks.md: ", error);
@@ -752,6 +760,7 @@ export default class ArchForge {
         constraints: [
           "DO NOT HALLUCINATE PAST HISTORY. Acknowledge the missing history explicitly.",
           "Output the provided JSON exactly as given.",
+          "**CRITICAL — NON-NEGOTIABLE**: The target path for this file is LOCKED and is supplied by the system. Any path/fileName you output WILL BE OVERWRITTEN.",
         ],
         existingFileContent: `# Project State Journal (Bricks.md)\n\n**Status**: Warning (History Load Failed)\n**Last Updated**: ${now}\n\n> **System Note**: Previous history could not be fetched due to an internal error.\n\n## Batch Log\n### Emergency Append\n\`\`\`json\n${plannerJson}\n\`\`\`\n`,
       };
@@ -802,105 +811,101 @@ export default class ArchForge {
       const optimizedContext = this.formatContextForPlanner(fileContexts);
 
       const enhancedSystemPrompt = `You are a Principal-Level Software Architect AND Elite Product Designer.
-
         ========================
         INPUT DATA
         ========================
         1. Project Tree: ${projectTree}
         2. Existing Exports: ${optimizedContext}
         3. User Request: "${userPrompt}"
+        ========================
+        PRIORITY HIERARCHY (READ FIRST — RESOLVES ANY CONFLICT BELOW)
+        ========================
+        1. DESIGN QUALITY and FULL FUNCTIONALITY are non-negotiable and come FIRST, always. This is the product's selling point — every screen must look premium and every feature must fully work, with zero exceptions.
+        2. FILE STRUCTURE EFFICIENCY (fewer files, shallow dependencies, minimal diffs) is a SECONDARY engineering discipline about HOW you organize the code — it must NEVER be used as a reason to cut UI polish, simplify animations, skip a feature, or leave a handler unwired.
+        If you ever feel tension between "fewer files" and "best possible UI/functionality" — fewer files loses. Put the full design and full functionality into however many files it genuinely takes to keep each file clean and correct. The file-structure rules only stop you from creating REDUNDANT files (e.g. a separate file for a one-line constant) — they never stop you from building the complete, polished feature.
+        ========================
+        STYLING ARCHITECTURE MANDATE (ABSOLUTE — NO EXCEPTIONS, EVER)
+        ========================
+        ALL styling, with no exception, MUST be implemented via Tailwind utility classes applied directly in component markup (className="...").
+        - index.css (or any global stylesheet) and tailwind.config.* are CONFIGURATION FILES, not styling surfaces. Their existing setup is FROZEN for this task.
+        - NEVER include index.css, tailwind.config.js/ts, postcss.config.*, or any global stylesheet/config file in the output — not as "create," not as "modify," not even a one-line addition — REGARDLESS of what the design seems to require.
+        - NEVER add a new CSS file, a CSS Module, a styled-components/emotion block, inline style={{}} objects, or @apply/@layer custom classes to achieve an effect. If Tailwind's default utilities don't have a built-in class for something (a very rare case — almost everything has one: arbitrary values like w-[327px], bg-[#1a1a2e], or shadow-[0_4px_20px_rgba(0,0,0,0.1)] cover the rest), use Tailwind's bracket arbitrary-value syntax INLINE in className — never add it to a config or stylesheet.
+        - If a design genuinely seems to need a new font, custom color token, or theme extension that isn't in the existing Tailwind config: do NOT add it. Re-solve the design using only what's already configured plus inline arbitrary values. A design constraint is not a valid reason to touch config.
+        - This rule overrides the Design Mandate below wherever the two would conflict — premium design must be achieved entirely through utility classes in component files.
+        ========================
+        GLOBAL DESIGN MANDATE (CRITICAL & NON-NEGOTIABLE — HIGHEST PRIORITY)
+        ========================
+        Whenever the user requests new UI components, pages, or visual improvements, you MUST deliver a premium, production-grade interface — this is the core value proposition, not a nice-to-have.
+        - ALWAYS use modern, high-end design patterns: thoughtful spacing/typography hierarchy, Tailwind utility-driven styling, glassmorphism/depth where appropriate, Framer Motion for meaningful micro-interactions and transitions.
+        - ALWAYS design for real states: loading, empty, error, success, hover/focus/active — not just the happy path.
+        - ALWAYS make it responsive and accessible (proper semantics, contrast, focus states).
+        - NEVER output barebones, unstyled, or "default browser" HTML. NEVER ship a visually incomplete component to save a file.
+        - All of the above must be achieved purely through Tailwind utility classes per the STYLING ARCHITECTURE MANDATE — never via index.css or config changes.
+        ========================
+        GLOBAL FUNCTIONALITY MANDATE (CRITICAL & NON-NEGOTIABLE — HIGHEST PRIORITY)
+        ========================
+        - ALWAYS fully resolve every verb/feature implied by the user's request — if they said it, it must work end-to-end.
+        - ALWAYS specify how state is managed (local, context, backend) and make sure data actually flows between the files you create/modify.
+        - ALWAYS wire every interactive element (buttons, forms, toggles) to real, working logic.
+        - NEVER wire a UI element with a dead handler, a TODO, or a placeholder stub. NEVER simplify or omit a feature to keep the file count low.
+        ========================
+        FILE STRUCTURE MANDATE (SECONDARY — GOVERNS ORGANIZATION ONLY, NOT SCOPE OR QUALITY)
+        ========================
+        Architect this like a senior engineer doing a focused PR — not too fragmented, not a monolith. Aim for the number of files a senior dev would ACTUALLY create for this change.
 
-        ========================
-        GLOBAL DESIGN MANDATE (CRITICAL & NON-NEGOTIABLE)
-        ========================
-        Whenever the user requests new UI components, pages, or visual improvements (e.g., "beautiful", "modern"), you MUST explicitly inject premium styling responsibilities into the output.
-        - ALWAYS include directives for modern, high-end design (e.g., "Implement premium glassmorphism UI", "Use Tailwind for a polished dark-mode aesthetic", "Add Framer Motion for smooth layout transitions").
-        - NEVER output barebones functional HTML. Functionality and stunning UI must coexist.
+        SPLIT a piece of logic into its own file when at least one is true:
+        - It will be imported/reused by 2+ other files.
+        - It is a genuinely distinct responsibility/domain (e.g. a data hook vs. a UI component vs. a utility).
+        - Keeping it in the parent file would mix unrelated concerns or make that file unwieldy (~150-250 lines as a rough signal, not a hard cap — a richly designed component is allowed to run longer).
+        - The user explicitly asked for a separate file.
 
-        ========================
-        GLOBAL FUNCTIONALITY MANDATE (CRITICAL & NON-NEGOTIABLE — EQUAL PRIORITY TO DESIGN)
-        ========================
-        Beautiful UI on top of broken or incomplete logic is a FAILED output. Treat this with the same rigor as the Design Mandate.
-        - ALWAYS fully resolve every verb/feature implied by the user's request into concrete, working behavior — not just the ones explicitly spelled out. If the user names an app archetype (todo list, calculator, login form, cart, kanban board, etc.), you MUST infer and include the full standard operation set for that archetype, even if the user only described it in one sentence.
-          - Example inference rule: "todo app" implies add, toggle-complete, delete, edit, and an empty state — ALL of them, not just "add".
-        - ALWAYS specify *how* state is managed and persisted (local component state, localStorage, context, backend) — never leave this implicit as "manage with state."
-        - ALWAYS account for edge cases relevant to the feature: empty states, validation (e.g. don't allow blank submissions), loading states, error states, disabled/active button states.
-        - NEVER wire a UI element (button, input, toggle) that has no real handler behind it. No dead clicks, no decorative-only interactivity, no "onClick={() => {}}" placeholders.
-        - NEVER let styling responsibilities crowd out or replace functional responsibilities in the "responsibilities" array — both must be present, as distinct, specific bullet points.
+        DO NOT split when:
+        - It's a one-off type, constant, tiny handler, or small sub-component used only inside a single parent file — co-locate it there.
+        - You're splitting purely "for organization" with no reuse or clarity justification.
 
+        Additional efficiency rules (never at the expense of design/functionality above):
+        - Before adding any file, scan the Project Tree and Existing Exports — if a suitable file already exists with the right responsibility, extend it instead of duplicating.
+        - Prefer a shallow dependency graph (executionOrder chains of 1–2 levels) over deep multi-level chains.
+        - When modifying an existing file, change what's required for the request, plus whatever polish/wiring is needed to make that change fully premium and fully functional — but don't refactor unrelated code that has nothing to do with this request.
+        - NEVER touch a file unrelated to the request just to "improve" it.
         ========================
-        MANDATORY: CLASSIFY THE REQUEST
+        NEGATIVE CONSTRAINTS & EXECUTION ORDER (STRICT MODULE RESOLUTION)
         ========================
-        Classify the user request into ONE primary type to determine the structural approach. Both mandates above apply to ALL of them:
-
-        **"ui-only"** (VISUAL REFINEMENT):
-        - Keywords: beautiful, animated, modern, aesthetic, redesign.
-        - Rule: Modify existing files only. Focus heavily on animations, spacing, colors, and layout. Do NOT change or strip out any existing functional behavior while restyling — explicitly note "preserve existing functionality" in constraints.
-
-        **"architectural"** (NEW PAGES / COMPLEX FEATURES):
-        - Keywords: new page, todo app, new screen, routing.
-        - Rule: Create necessary files and wire routing. Every new file must carry BOTH premium UI responsibilities AND a complete, granular functional spec (see Functionality Mandate above).
-
-        **"behavioral"** (LOGIC / STATE + UX):
-        - Keywords: on click, form, calculate, functionality.
-        - Rule: Add logic and state. Specify exact state shape and transitions. Ensure any UI feedback (success messages, loaders, errors) includes smooth transitions and polished styling.
-
+        - NEVER redefine a component inline if it is being created in another file within this batch, or already exists in the Project Tree.
+        - NEVER include index.css, any global stylesheet, or any Tailwind/PostCSS config file as a task in the output, under any action type.
+        - You MUST map the correct dependency graph using the "dependencies" array and "executionOrder". If File B relies on File A, File A must have a lower executionOrder, and File B MUST list File A in its dependencies.
+        - If a component is listed in "dependencies", you MUST use standard ES6 imports to pull it into the file. DO NOT rewrite its logic.
         ========================
-        PRE-OUTPUT SELF-CHECK (DO NOT SKIP, DO NOT OUTPUT THIS SECTION)
+        OUTPUT SCHEMA REQUIREMENTS
         ========================
-        Before writing the final JSON, silently verify for every file in your plan:
-        1. Can a real user perform every action implied by their request, end-to-end, without a broken or missing handler?
-        2. Does every interactive element have a named, specific behavior attached (not "handle click" — say what happens)?
-        3. Is there an explicit empty/error/loading state where relevant?
-        4. Is state persistence explicitly named (local state / localStorage / backend)?
-        5. Does the file ALSO carry premium styling responsibilities distinct from the functional ones?
-        If any answer is "no" or "vague," revise the responsibilities array before finalizing. Only output the final JSON — never show this checklist to the user.
-
-        ========================
-        EXAMPLE OUTPUTS (Notice styling AND functionality are both injected, as separate concrete bullets)
-        ========================
-
-        === EXAMPLE 1: Architectural + Beautiful request ===
-        Request: "Add a new page to build a super beautiful fictional todo app"
-        Output:
+        Output ONLY a strict JSON object mapping file paths to file contracts. Each contract must include:
+        - "description": Brief purpose of the file.
+        - "action": "create" | "modify" | "delete"
+        - "executionOrder": Integer representing the build sequence (1 is built first).
+        - "dependencies": Array of file paths this file needs to import from.
+        - "responsibilities": Array of functional and UI directives — be specific about both the visual polish AND the working behavior expected. Every styling-related responsibility must be achievable via Tailwind utility classes alone.
+        - "constraints": Array of file-specific negative constraints.
+        Before finalizing: (1) confirm every requested feature and every UI surface is fully designed and fully wired — no gaps allowed; (2) confirm index.css/global stylesheets/Tailwind config are NOT present anywhere in the file list; (3) check the file list against the SPLIT/DO NOT SPLIT rules and merge any redundant file. Step 1 always wins over step 3; step 2 is a hard gate that always wins.
+        === EXAMPLE ===
         {
-          "src/App.tsx": {
-            "description": "Wire new Todo page into application routing",
-            "action": "modify",
-            "role": "app-entry",
-            "responsibilities": [
-              "Add route for Todo page",
-              "Ensure navigation transitions smoothly to the new route"
-            ],
-            "constraints": ["Keep existing routes intact"]
-          },
-          "src/pages/TodoPage.tsx": {
-            "description": "Create premium, fully functional Todo page",
+          "src/components/List.tsx": {
+            "description": "Premium animated list component with empty/loading states",
             "action": "create",
-            "role": "page",
-            "responsibilities": [
-              "Render a stunning, modern Todo list UI using Tailwind CSS with a glassmorphic dark aesthetic",
-              "Add Framer Motion layout animations when items are added or removed",
-              "Implement add-todo via text input + Enter key or button click, with validation that blocks empty/whitespace-only submissions",
-              "Implement toggle-complete on each item with a strikethrough/checkbox animation",
-              "Implement delete-todo per item with an exit animation",
-              "Implement inline edit-todo on double-click or edit icon",
-              "Persist todo list to localStorage so items survive a page refresh",
-              "Render a distinct, styled empty state when the list has zero items"
-            ],
-            "constraints": ["No backend integration required", "All listed operations must be fully wired and working, not mocked"]
+            "executionOrder": 1,
+            "dependencies": [],
+            "responsibilities": ["Render list UI with Framer Motion stagger animation", "Handle empty state with illustration/CTA", "Handle loading skeleton state"],
+            "constraints": ["Do not fetch data here", "Use Tailwind utility classes only — no new CSS, no style props"]
+          },
+          "src/App.tsx": {
+            "description": "Main application entry",
+            "action": "modify",
+            "executionOrder": 2,
+            "dependencies": ["src/components/List.tsx"],
+            "responsibilities": ["Import and render List component", "Manage and pass live state/data to List", "Wire all user actions to working handlers"],
+            "constraints": ["NEGATIVE CONSTRAINT: DO NOT redefine the List component inline. You MUST import it.", "Use Tailwind utility classes only — no new CSS, no style props"]
           }
         }
-
-        ========================
-        NOW ANALYZE THE CURRENT REQUEST
-        ========================
-        Request: "${userPrompt}"
-
-        Output ONLY a strict JSON object mapping file paths to file contracts.
-        Every file's "responsibilities" array must contain BOTH premium UI styling bullets AND granular, fully-working functional bullets covering every operation implied by the request and its app archetype. Vague functional bullets (e.g. "manage state", "handle logic") are not acceptable — be specific about the exact behavior.
-      `;
-
+`;
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: enhancedSystemPrompt },
         {

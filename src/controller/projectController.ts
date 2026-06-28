@@ -194,7 +194,9 @@ export const getRecentProjects = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    const projects = await Project.find({ userId }).sort({ createdAt: -1 }).limit(4);
+    const projects = await Project.find({ userId, markDelete: false })
+      .sort({ createdAt: -1 })
+      .limit(4);
 
     sendResponse(res, 200, {
       success: true,
@@ -221,7 +223,7 @@ export const exportAllProject = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    const projects = await Project.find({});
+    const projects = await Project.find({ userId });
     if (!projects) {
       sendResponse(res, 400, { success: false, message: "No Projects Found" });
       return;
