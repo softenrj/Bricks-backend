@@ -18,6 +18,7 @@ export const router = (app: Application) => {
       status: "ok",
       uptime: process.uptime(),
       timestamp: Date.now(),
+      ip: req.ip
     });
   }),
     app.use("/api/user", userRouter),
