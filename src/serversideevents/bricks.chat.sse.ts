@@ -8,7 +8,7 @@ import bricks_message from "../model/bricks_message.js";
 import getVectorEmbedding from "../service/vectorTransformer.js";
 import { FileVector } from "../model/file_vectors.js";
 import { ChatCompletionMessageParam } from "groq-sdk/resources/chat.mjs";
-import { AI_MODULE } from "../config/groqSdkConfig.js";
+import { AI_MINI, AI_MODULE } from "../config/groqSdkConfig.js";
 import mongoose from "mongoose";
 
 export class BRICKSCHATSSE_SERVICE {
@@ -131,7 +131,7 @@ export class BRICKSCHATSSE_SERVICE {
 
       //? AI Streaming
       const aiStream = await AI_MODULE.chat.completions.create({
-        model: "llama-3.1-8b-instant",
+        model: AI_MINI,
         messages,
         temperature: 0.7,
         stream: true,

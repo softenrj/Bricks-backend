@@ -9,3 +9,5 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export const AI_MODULE = groq;
 export const Google_GenAI = ai;
+
+export const AI_MINI: string = "groq/compound";

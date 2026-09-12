@@ -8,7 +8,7 @@ import getVectorEmbedding from "../service/vectorTransformer.js";
 import { FileVector } from "../model/file_vectors.js";
 import { IProjectFile, ProjectFile } from "../model/project_files.js";
 import { buildAsciiTree } from "../service/treeNodeBuilder.js";
-import { AI_MODULE, Google_GenAI } from "../config/groqSdkConfig.js";
+import { AI_MINI, AI_MODULE, Google_GenAI } from "../config/groqSdkConfig.js";
 import { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions.mjs";
 import { ArchEnginStatusSocket } from "../sockets/ArchEnginProcess.js";
 import { processIdProvider, uIdProvider } from "../service/user.uidProvider.js";
@@ -79,6 +79,11 @@ export default class ArchForge {
   }
 
   // #region ------- Laxical ArchPipeLine --------
+  /**
+   *
+   * @param processArgs
+   * @returns {void}
+   */
   private static async lexicalArchPipeLine(processArgs: Process): Promise<any> {
     try {
       const { prompt, projectId, userId, cursor_fileId, jobId } = processArgs;
@@ -160,6 +165,8 @@ export default class ArchForge {
         userId
       );
 
+      if (Object.keys(plannerScript).length === 0) return;
+
       const snapids = await this.ArchCodeGenerator(
         context,
         plannerScript,
@@ -175,6 +182,12 @@ export default class ArchForge {
   }
   // #endregion
 
+  /**
+   *
+   * @param projectId
+   * @param userId
+   * @returns {Promise<string>}
+   */
   private static async projectTree(
     projectId: mongoose.Types.ObjectId,
     userId: mongoose.Types.ObjectId
@@ -194,6 +207,15 @@ export default class ArchForge {
   }
 
   // #region ------ AI CodeFile Generation ------
+  /**
+   *
+   * @param fileContexts
+   * @param planedScript
+   * @param projectId
+   * @param userId
+   * @param jobId
+   * @returns {Promise<{ snapv1Id: string; snapv2Id: string } | null>}
+   */
   private static async ArchCodeGenerator(
     fileContexts: ArchFileContext[],
     planedScript: ProjectPlan,
@@ -264,8 +286,8 @@ export default class ArchForge {
           "STEP 1: Delete all existing content, including all metadata, completed files, and previous Batch Logs.",
           "STEP 2: Output ONLY a fresh, clean slate template exactly as follows:",
           "# Project State Journal (Bricks.md)\n\n**Status**: Ready for New Task\n**Last Updated**: " +
-            new Date().toISOString() +
-            "\n\n> **System Directive**: Awaiting new project plan.",
+          new Date().toISOString() +
+          "\n\n> **System Directive**: Awaiting new project plan.",
         ],
         constraints: [
           "HARD WIPE: Do not preserve any history, JSON blocks, or previous batch information. The old task is completely finished.",
@@ -483,7 +505,7 @@ export default class ArchForge {
             raw = text.replace(/^(```[\w]*\n)|(\n```)$|(```)$/g, "").trim();
           } catch (err) {
             const completion = await AI_MODULE.chat.completions.create({
-              model: "Llama-3.3-70B-Versatile",
+              model: AI_MINI,
               messages,
               temperature: 0.3,
               response_format: { type: "json_object" },
@@ -572,6 +594,15 @@ export default class ArchForge {
     }
   }
 
+  /**
+   *
+   * @param state
+   * @param userId
+   * @param projectId
+   * @param files
+   * @param parentSnapshotId
+   * @returns {Promise<mongoose.Types.ObjectId | null>}
+   */
   private static async snapshot(
     state: snapshotEnum,
     userId: mongoose.Types.ObjectId,
@@ -631,6 +662,11 @@ export default class ArchForge {
     }
   }
 
+  /**
+   *
+   * @param content
+   * @returns {string[]}
+   */
   private static extractImports(content: string): string[] {
     const regex = /import\s+(?:[^;]+?)\s+from\s+['"]([^'"]+)['"]/g;
     const imports: string[] = [];
@@ -642,6 +678,11 @@ export default class ArchForge {
     return imports;
   }
 
+  /**
+   *
+   * @param imp
+   * @returns {null | string}
+   */
   private static resolveImportPath(imp: string): string | null {
     // Skip external packages
     if (!imp.startsWith("@/")) return null;
@@ -653,6 +694,12 @@ export default class ArchForge {
     return path;
   }
 
+  /**
+   *
+   * @param filePath
+   * @param projectId
+   * @returns {Promise<string>}
+   */
   private static async fileCodeProvider(
     filePath: string,
     projectId: mongoose.Types.ObjectId
@@ -675,6 +722,14 @@ export default class ArchForge {
     }
   }
 
+  /**
+   *
+   * @param projectId
+   * @param userId
+   * @param plannerScript
+   * @param batches
+   * @returns {Promise<GenerationRequest>}
+   */
   private static async BricksMdFileProvider(
     projectId: Types.ObjectId,
     userId: Types.ObjectId,
@@ -768,6 +823,15 @@ export default class ArchForge {
   }
   // #endregion
 
+  /**
+   *
+   * @param message
+   * @param projectId
+   * @param userId
+   * @param processId
+   * @param state
+   * @returns {void}
+   */
   private static pushToUser(
     message: string,
     projectId: mongoose.Types.ObjectId,
@@ -792,6 +856,15 @@ export default class ArchForge {
   }
 
   // #region ------ AI planner ------
+  /**
+   *
+   * @param fileContexts
+   * @param projectTree
+   * @param userPrompt
+   * @param projectId
+   * @param userId
+   * @returns {Promise<ProjectPlan>}
+   */
   private static async archProjectPlanner(
     fileContexts: ArchFileContext[],
     projectTree: string,
@@ -799,8 +872,8 @@ export default class ArchForge {
     projectId: mongoose.Types.ObjectId,
     userId: mongoose.Types.ObjectId
   ): Promise<ProjectPlan> {
+    const processId = processIdProvider();
     try {
-      const processId = processIdProvider();
       this.pushToUser(
         "Analyzing project and planning required changes...",
         projectId,
@@ -915,7 +988,7 @@ export default class ArchForge {
       ];
 
       const completion = await AI_MODULE.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
+        model: AI_MINI,
         messages: messages,
         temperature: 0.1, // Keep this low so JSON formatting is strict, the prompt now handles the creativity.
         response_format: { type: "json_object" },
@@ -928,12 +1001,18 @@ export default class ArchForge {
       return plan;
     } catch (error) {
       console.error(" ArchEngine Planner Error:", error);
+      this.pushToUser("There is a Ai Pipeline issue please try again after some time!", projectId, userId, processId, 'complete');
       return {};
     }
   }
 
   // #endregion
 
+  /**
+   *
+   * @param files
+   * @returns {string}
+   */
   private static formatContextForPlanner = (files: ArchFileContext[]): string => {
     return files
       .map((f) => {

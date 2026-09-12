@@ -5,7 +5,7 @@ import BricksMessage from "../model/bricks_message.js";
 import BricksChat from "../model/bricks_chats.js";
 import { IBricksChat } from "../model/bricks_chats.js";
 import { ChatCompletionMessageParam } from "groq-sdk/resources/chat.mjs";
-import { AI_MODULE } from "../config/groqSdkConfig.js";
+import { AI_MINI, AI_MODULE } from "../config/groqSdkConfig.js";
 import { FileVector } from "../model/file_vectors.js";
 import getVectorEmbedding from "./vectorTransformer.js";
 import mongoose from "mongoose";
@@ -27,7 +27,7 @@ export class BRICKS_AI_ENGINE {
 
     try {
       const response = await AI_MODULE.chat.completions.create({
-        model: "llama-3.1-8b-instant",
+        model: AI_MINI,
         messages: [
           {
             role: "system",
@@ -199,7 +199,7 @@ If the question relates to files, use the provided context *only if clearly rele
 
       //? Get AI response
       const response = await AI_MODULE.chat.completions.create({
-        model: "llama-3.1-8b-instant",
+        model: AI_MINI,
         messages,
         temperature: 0.7,
       });

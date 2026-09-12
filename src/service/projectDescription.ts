@@ -1,7 +1,7 @@
 // Copyright (c) 2025-2026 Raj
 // See LICENSE for details.
 
-import { AI_MODULE } from "../config/groqSdkConfig.js";
+import { AI_MINI, AI_MODULE } from "../config/groqSdkConfig.js";
 
 export const __projectDescription = async (
   _projectName: string,
@@ -9,7 +9,7 @@ export const __projectDescription = async (
 ): Promise<string> => {
   try {
     const response = await AI_MODULE.chat.completions.create({
-      model: "llama-3.1-8b-instant",
+      model: AI_MINI,
       messages: [
         {
           role: "system",

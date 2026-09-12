@@ -1,7 +1,7 @@
 // Copyright (c) 2025-2026 Raj
 // See LICENSE for details.
 
-import { AI_MODULE } from "../config/groqSdkConfig.js";
+import { AI_MINI, AI_MODULE } from "../config/groqSdkConfig.js";
 import { ChatCompletionMessageParam } from "groq-sdk/resources/chat.mjs";
 
 const MAX_TOKENS = 500;
@@ -35,7 +35,7 @@ Follow these rules strictly:
       ];
 
       const response = await AI_MODULE.chat.completions.create({
-        model: "llama-3.1-8b-instant",
+        model: AI_MINI,
         messages,
         temperature: TEMPERATURE,
         max_tokens: MAX_TOKENS,
