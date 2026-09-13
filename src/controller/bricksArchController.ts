@@ -50,11 +50,41 @@ export const archForgeCodeGenBricks = async (req: Request, res: Response): Promi
   }
 };
 
+export const ArchForgeStreamValidate = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { jobId } = req.params;
+    const userId = req.userId;
+
+    if (!userId) {
+      sendResponse(res, 401, { success: false, message: "Unauthorized" });
+      return;
+    }
+
+    if (!jobId) {
+      sendResponse(res, 400, { success: false, message: "Missing or Invalid Project Id " });
+      return;
+    }
+
+    archSSEmanager._setAuthUser(jobId, userId);
+    sendResponse(res, 200, { message: "Ready to Stream data chuncks", success: true, data: {} });
+  } catch (error) {
+    console.error("Error ArchForge Stream Validator:", error);
+    sendResponse(res, 500, { success: false, message: "Internal Server Error" });
+    return;
+  }
+}
+
 export const ArchForgeStream = async (req: Request, res: Response): Promise<void> => {
   const { jobId } = req.params;
 
   if (!jobId) {
     sendResponse(res, 400, { success: false, message: "Missing or Invalid Project Id " });
+    return;
+  }
+
+  if (!archSSEmanager.isSSEAuthUsre(jobId)) {
+    //TODO terminate process for this job ---
+    sendResponse(res, 403, { success: false, message: "Process Terminate Due to unauthorized Request" });
     return;
   }
 

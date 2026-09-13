@@ -2,10 +2,19 @@
 // See LICENSE for details.
 
 import { Response } from "express";
-import mongoose, { ObjectId } from "mongoose";
+import mongoose, { ObjectId, Types } from "mongoose";
 
 class ARCH_SSE_MANAGER {
   private clients = new Map<string, Response>();
+  private autorizedClients = new Map<string, Types.ObjectId>();
+
+  _setAuthUser(jobId: string, userId: Types.ObjectId) {
+    this.autorizedClients.set(jobId, userId);
+  }
+
+  isSSEAuthUsre(jobId: string): boolean {
+    return this.autorizedClients.has(jobId);
+  }
 
   _add(jobId: string, res: Response) {
     this.clients.set(jobId, res);
@@ -13,6 +22,7 @@ class ARCH_SSE_MANAGER {
 
   _remove(jobId: string) {
     this.clients.delete(jobId);
+    this.autorizedClients.delete(jobId);
   }
 
   send(jobId: string, event: string, data: any) {
@@ -31,6 +41,7 @@ class ARCH_SSE_MANAGER {
     client.write(`data: ${JSON.stringify(snapids)}\n\n`);
     client.end();
     this.clients.delete(jobId);
+    this.autorizedClients.delete(jobId);
   }
 }
 

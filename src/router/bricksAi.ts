@@ -9,7 +9,8 @@ import * as snapsortController from "../controller/snapshotController.js";
 const router = Router();
 
 router.post("/bricks-arch-forge", isAuth, bricksArchController.archForgeCodeGenBricks);
-router.get("/bricks-arch-forge/stream/:jobId", isStreamAuth, bricksArchController.ArchForgeStream);
+router.get("/bricks-arch-forge/stream/validate/:jobId", isAuth, bricksArchController.ArchForgeStreamValidate);
+router.get("/bricks-arch-forge/stream/:jobId", bricksArchController.ArchForgeStream);
 
 router.post("/bricks-arch/snapshot-extened", isAuth, snapsortController.extendSnapLife);
 router.post("/bricks-arch/snapshot-commit", isAuth, snapsortController.commitSnap);

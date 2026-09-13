@@ -1000,9 +1000,8 @@ export default class ArchForge {
       this.pushToUser("", projectId, userId, processId, "complete");
       return plan;
     } catch (error) {
-      console.error(" ArchEngine Planner Error:", error);
-      this.pushToUser("There is a Ai Pipeline issue please try again after some time!", projectId, userId, processId, 'complete');
-      return {};
+      this.pushToUser("There is a Ai Pipeline Planner Parsing issue Retrying!", projectId, userId, processId, 'complete');
+      return this.archProjectPlanner(fileContexts, projectTree, userPrompt, projectId, userId);
     }
   }
 
